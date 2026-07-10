@@ -27,7 +27,7 @@ echo ""
 eval "$(conda shell.bash hook)"
 conda activate $CONDA_ENV
 
-cd "$(dirname "$0")"
+cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}"
 export MPLBACKEND=Agg
 export STRUCTML_ARTIFACTS="$(cd .. && pwd)/artifacts"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
