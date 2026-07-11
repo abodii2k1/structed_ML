@@ -2,10 +2,10 @@
 #SBATCH --job-name=structml_aspect
 #SBATCH --output=logs/aspect_%x_%j.out
 #SBATCH --error=logs/aspect_%x_%j.err
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 
 # Usage: sbatch run_single_aspect.sh <prep|a1|a2|a3|a4>
 ASPECT=$1
