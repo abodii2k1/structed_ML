@@ -96,3 +96,42 @@ rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/edge_ablation_*.csv \
 Output: `artifacts/edge_ablation_{rel-stack,rel-trial}.csv` - one row per relation per
 seed (AUROC with that relation masked, and its drop from the unmasked baseline), plus
 a `__baseline__` row per seed.
+
+## Supplementary: fine-tuned LLM encoding for Aspect 3 (2 more independent jobs)
+
+Tests whether Aspect 3's `llm` strategy loses to `column` because serializing a row to
+text loses structure, or because the frozen MiniLM embedding just can't adapt to the
+task. Fine-tunes MiniLM (~22.7M params) end-to-end instead of using the official
+strategy's frozen precomputed embedding. See the `a3-finetune-0` markdown cell in
+`final.ipynb` for the full reasoning and the empirical checks behind the implementation
+(PyG can't slice raw text lists, so text is pre-tokenized into fixed-length tensors
+instead; discriminative LR so fine-tuning doesn't wreck the pretrained weights).
+
+Same split-by-dataset pattern as the edge ablation above - two standalone jobs, no
+shared dependency:
+
+```bash
+# on your account
+sbatch run_finetune_relstack.sh
+
+# on your labmate's account
+sbatch run_finetune_reltrial.sh
+```
+
+Heavier than everything else in this project: MiniLM's transformer now runs a live
+forward+backward pass every mini-batch (vs. a cached lookup + one linear layer for the
+frozen `llm` strategy), so expect this to be noticeably slower per epoch.
+
+Bring the results home the same way:
+
+```bash
+rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_finetune_results.csv \
+          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_finetune_loss_curves.csv \
+          ~/structed_ML/hw3/artifacts/
+```
+
+Output: `artifacts/aspect3_finetune_results.csv` (one row per seed: AUROC, AUPRC,
+precision, recall, learned params, train time) and
+`artifacts/aspect3_finetune_loss_curves.csv` (per-epoch curves, same format as the
+official aspects) - kept separate from `aspect3_results.csv` since this is a
+supplementary follow-up, not an official strategy.
