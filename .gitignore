@@ -1,7 +1,7 @@
 # --- heavy, regenerable caches (rebuild via hw3/hpc prep job or the notebook cells) ---
 hw3/artifacts/graph_cache/
 hw3/artifacts/aspect3_subgraphs/
-
+hw3/artifacts/graph_cache/rel-trial_glove
 # --- old homework byproducts (large, not needed in the repo) ---
 features/
 hw1/features
