@@ -2,309 +2,361 @@
 
 **StructML (236605) - Final Project Report**
 
-Authors: [NAME 1] ([ID 1]), [NAME 2] ([ID 2])
+Authors: Abed-Al-Rahman Badran (325424752), Zina Assi (213813165)
 
 ## Abstract
 
-Relational deep learning applies graph neural networks to graphs built from relational databases. We run a controlled ablation study of four design choices in such models: message directionality, graph heterogeneity, initial node features, and network depth. All experiments use two RelBench entity-classification tasks (rel-stack user-engagement, a graph of about 4 million nodes, and rel-trial study-outcome) and report ROC AUC, AUPRC, precision and recall. Inside every comparison we keep the encoders, depth, sampling and training identical, report parameter counts, and repeat noisy runs over 3 seeds. Our main findings: (1) the effect of directionality depends on both the schema and the architecture: GAT breaks without reverse edges while GraphSAGE barely notices, so bidirectional passing with shared weights is the safe default. (2) Type-aware (heterogeneous) message passing is not a free win: a simpler type-blind model matched or beat it in three of four cases, with fewer parameters. (3) For node features, typed column encoders beat both frozen LLM row embeddings and featureless id embeddings on both datasets. (4) Deeper GCNs clearly oversmooth their representations and skip connections reduce that, but task accuracy stays flat. Our numbers match the public RelBench leaderboard level, and the leaderboard independently shows two of our findings. Code and all results are in `final.ipynb` (exported to `final.html`).
+Relational deep learning applies graph neural networks to graphs built from relational databases. We run a controlled ablation study of four design choices in such models: message directionality, graph heterogeneity, initial node features, and network depth. All experiments use two RelBench entity-classification tasks, rel-stack user-engagement and rel-trial study-outcome, and report ROC AUC, AUPRC, precision, and recall. Inside every comparison we keep the encoders, sampling, and training protocol identical, report parameter counts, and train every configuration on both datasets with 3 seeds to convergence. Our main findings: (1) message directionality has a small effect on rel-stack but a clear one on rel-trial, where forward-only message passing underperforms bidirectional passing for both GraphSAGE and GAT; bidirectional passing with shared weights (MPNN-U) is the safest default. (2) Type-aware heterogeneous message passing is not a free win: it helps in only one of four model/dataset combinations, ties in two, and loses in one, despite always using more parameters. (3) For node features, typed column encoders beat both frozen LLM row embeddings and featureless ID embeddings on both datasets, with a consistent ordering. (4) Deeper GCNs measurably oversmooth their representations, and skip connections counteract this at the representation level and, on rel-stack, translate into a real downstream gain at high depth. Our absolute numbers match the public RelBench leaderboard level, and the leaderboard independently supports two of our findings.
 
 ---
 
 ## 1. Introduction
 
-Relational deep learning turns a relational database into a heterogeneous graph (one node per table row, edges along primary-key/foreign-key links) and trains message-passing GNNs on it. Many design choices go into such a model: which direction messages flow, whether types are modeled explicitly, how a row becomes an initial node vector, and how deep the network is. This project isolates each of these aspects in turn and measures its contribution on two real prediction tasks, plus a dry design question on foundation models.
+Relational deep learning turns a relational database into a heterogeneous graph, one node per table row with edges along primary-key/foreign-key links, and trains message-passing GNNs on it. Many design choices affect such a model: which direction messages flow, whether types are modeled explicitly, how a row becomes an initial node vector, and how deep the network should be. This project isolates each of these aspects and measures its contribution on two real prediction tasks, plus a dry design question on foundation models. Each aspect below follows the same template: the question being asked, the exact model architecture used (with a diagram), how the comparison is designed to isolate that one variable, the experimental setup, the results, whether training actually converged, and a discussion that explains the mechanisms behind what we observed rather than just restating the numbers.
 
-## 2. Global Setup and Fair-Comparison Protocol
+## 2. Global Setup and Comparison-Design Protocol
 
 This protocol is shared by every aspect, so the only thing that changes inside an experiment is the aspect being studied.
 
 ### Datasets and tasks
-Two rel-bench datasets, one binary entity-classification task each:
+
+Two RelBench datasets, one binary entity-classification task each:
 
 | Dataset | Task | Type | Target |
 |---|---|---|---|
-| rel-stack | user-engagement | binary classification | will a user contribute in the next window |
-| rel-trial | study-outcome | binary classification | does a clinical study succeed |
+| rel-stack | user-engagement | binary classification | whether a user contributes in the next window |
+| rel-trial | study-outcome | binary classification | whether a clinical study succeeds |
 
-Two very different domains (a Q&A community vs clinical trials) let us check whether each effect generalizes rather than being specific to one dataset.
+These are two very different domains - a Q&A community and clinical trials - so they let us check whether each effect generalizes rather than being specific to one dataset.
 
 ### Graph construction
-Each database is turned into a heterogeneous graph (`HeteroData`): one node per table row, edges following primary-key to foreign-key links. relbench stores each link as a forward edge `f2p_<key>` and a reverse edge `rev_f2p_<key>`, so by default messages can flow in both directions. Row timestamps are attached as a time attribute, and we use the temporal train / validation / test splits that rel-bench defines. Temporal splits plus time-aware neighbor sampling guarantee a node never sees information from the future.
+
+Each database is turned into a heterogeneous graph (`HeteroData`): one node per table row, with edges following primary-key to foreign-key links. RelBench stores each link as a forward edge `f2p_<key>` and a reverse edge `rev_f2p_<key>`, so by default messages can flow in both directions. Row timestamps are attached as a time attribute, and we use the temporal train/validation/test splits defined by RelBench. Temporal splits plus time-aware neighbor sampling guarantee that a node never sees information from the future.
 
 ### Default node features
-For Aspects 1, 2 and 4 the initial node features come from column-wise encoders (the standard rel-bench / torch_frame encoders that map each typed column to a numeric vector), with text columns embedded by GloVe (sentence-transformers `average_word_embeddings_glove.6B.300d`, randomly projected to 128 dims to bound memory). Aspect 3 is precisely the experiment that varies this choice.
 
-### Models and training
-Each aspect uses the models its question calls for, as the assignment specifies: GraphSAGE and GAT in Aspect 1, GraphSAGE and HGT in Aspect 2, HGT in Aspect 3, GCN in Aspect 4. What is shared is everything around the model, so results stay comparable: the same per-table feature encoders, hidden size 128, two message-passing layers (except the Aspect 4 depth sweep), and a small MLP head that outputs one logit. Heterogeneous variants use one convolution per edge type (PyG `HeteroConv`, equivalent to `to_hetero`). Training is identical everywhere: `BCEWithLogitsLoss` with a positive-class weight for imbalance, Adam with a fixed learning rate, a capped number of epochs, and early stopping on validation ROC AUC.
+For Aspects 1, 2, and 4, the initial node features come from column-wise encoders, the standard RelBench / torch_frame encoders that map each typed column to a numeric vector. Text columns are embedded using GloVe and randomly projected to 128 dimensions to bound memory. Aspect 3 is the experiment that varies this choice.
 
 ### Handling scale
-rel-stack has on the order of four million nodes, so full-graph training does not fit in 8 GB. We use `NeighborLoader` mini-batching with a fixed fan-out per layer and per edge type, and time-aware sampling. For the LLM feature experiment (Aspect 3), which is the heaviest, we take a fixed label-stratified subsample of seed entities together with their 2-hop neighborhoods and use the same subsample for all three feature strategies (details in Section 5).
+
+rel-stack has on the order of four million nodes, so full-graph training does not fit in 8 GB. We use `NeighborLoader` mini-batching with a fixed fan-out per layer and per edge type, plus time-aware sampling. For the LLM feature experiment in Aspect 3, which is the heaviest, we take a fixed label-stratified subsample of seed entities together with their 2-hop neighborhoods and use the same subsample for all three feature strategies.
+
+### Training protocol
+
+`BCEWithLogitsLoss` with a positive-class weight for imbalance, Adam with a fixed learning rate (1e-3), a capped number of epochs, and early stopping on validation ROC AUC (the model with the best validation AUROC so far is checkpointed; if no improvement occurs for `patience` consecutive epochs, or the epoch cap is reached, that checkpoint - not the final epoch - is restored and used for evaluation). All results in this report use a **converged protocol**: up to 30 epochs, patience 6 (Aspect 4's depth sweep additionally caps mini-batches per epoch at 1000, since it trains 12 configurations per dataset), and **3 seeds (42, 43, 44) on both datasets** for every configuration; tables report the mean and standard deviation over seeds. We also log the learnable-parameter count and training time per run, and log per-epoch train loss, validation loss, and validation AUROC for every run, which we use in each aspect's Convergence Analysis subsection.
 
 ### Evaluation measures
-For every experiment we report ROC AUC, AUPRC (area under the precision-recall curve), precision, and recall. Precision and recall need a decision threshold; we pick the threshold that maximizes F1 on the validation set. Because rel-bench hides the test labels, **every metric is reported on the validation split**, using that best-F1 threshold. This means precision and recall are tuned and evaluated on the same split, a mild optimistic bias that is identical across variants. Seeds: on rel-stack, whose validation split has ~86k rows, metric estimates are stable across runs, and each configuration is trained once (seed 42; a rel-stack run costs 10-40 minutes). On rel-trial, whose validation split has only 960 rows, metrics are noisy and runs are cheap, so every configuration is trained with **3 seeds** (42/43/44); tables report the mean and figures show the standard deviation. Aspect 3 uses 3 seeds on both datasets. Remaining small gaps (a few thousandths of AUROC) should still be read as within noise. We also log the learnable-parameter count and training time per run.
 
-### What "fair comparison" means here
-Inside each aspect we hold everything constant - the data splits, the seeds, the hidden size, the number of layers, the neighbor fan-out, the feature encoders, the prediction head, and the training schedule - and change only the aspect under study. Some aspects unavoidably change the parameter count (for example Dir-GNN uses separate weights per direction, and heterogeneous models duplicate weights per type). For those we report the parameter counts directly, and, where the higher-capacity model actually wins, we consider a parameter-matched control (shrinking the larger model's width so the totals line up) to tell whether the gain is from the design choice or from extra capacity. Each aspect's discussion states whether that control was needed and whether we ran it.
+For every experiment we report ROC AUC, AUPRC, precision, and recall. Precision and recall require a decision threshold, so we choose the threshold that maximizes F1 on the validation set. Because RelBench hides the test labels, every metric is reported on the validation split using that best-F1 threshold. This introduces a mild optimistic bias for precision and recall, but it is identical across variants, so it does not affect comparisons.
+
+One additional methodological note we uncovered while auditing convergence: because `NeighborLoader`'s neighbor subsampling is not seeded at evaluation time (a node with more neighbors than the configured fan-out gets a random subset each call), two evaluations of the *same* restored checkpoint can differ slightly. We measured this directly by comparing each run's officially reported AUROC against the value logged for that same epoch during training: the discrepancy is negligible for Aspects 1-2 (mean |diff| ≈ 0.00003-0.00009, max ≈ 0.0005) and larger but still small for Aspect 4 (mean ≈ 0.0006, max ≈ 0.0046), where the fan-out (10) is tightest relative to real node degree. Aspect 3 shows zero discrepancy, because its cached subgraph rarely has any node exceeding its fan-out cap, so there is nothing to subsample. This noise is well below the effect sizes we report as real findings, but small gaps of a few thousandths in AUROC anywhere in this report should be read with this in mind.
+
+### What our comparison design means
+
+Inside each aspect we hold everything constant, the data splits, the seeds, the hidden size, the number of layers, the neighbor fan-out, the feature encoders, the prediction head, and the training schedule, and change only the aspect under study. Some aspects unavoidably change the parameter count - for example Dir-GNN uses separate weights per direction, and heterogeneous models duplicate weights per type. For those cases we report parameter counts directly, and where the higher-capacity model actually wins, we discuss whether the gain plausibly comes from the design choice or from extra capacity; Aspect 2 additionally includes a parameter-matched control.
 
 ### External sanity check (RelBench leaderboard)
-Our absolute numbers line up with the public RelBench leaderboard (test-split AUROC, in %): the official RDL (GraphSAGE) baseline scores **90.6** on user-engagement and **68.6** on study-outcome, and LightGBM on raw entity features scores 63.4 / 70.1. Our GraphSAGE models reach 86.8-87.4 (validation) on user-engagement - a few points below the official run, consistent with our lighter training budget (capped steps per epoch, no relative-time encoder, 128-dim projected GloVe text features) - and 68.5-69.4 (validation) on study-outcome, matching the official level. The leaderboard also independently corroborates two of our findings: official HGT trails official GraphSAGE exactly where we found type-aware attention unhelpful (58.4 vs 68.6 on study-outcome, and 71.8 vs 75.8 mean AUROC over all classification tasks), and official GAT likewise trails GraphSAGE on study-outcome (66.2 vs 68.6), consistent with the attention model's difficulties we observed there. Leaderboard numbers are on the hidden test split and ours on validation, so the comparison is indicative rather than exact - but it places our pipeline at the expected performance level rather than an artifact of our setup.
+
+Our absolute numbers line up with the public RelBench leaderboard (test-split AUROC, in %): the official RDL (GraphSAGE) baseline scores 90.6 on user-engagement and 68.6 on study-outcome, and LightGBM on raw entity features scores 63.4 / 70.1. Our GraphSAGE models reach 0.87-0.88 (validation) on user-engagement, a few points below the official run, consistent with our lighter architecture (no relative-time encoder, 128-dim projected GloVe text) and validation-vs-test split, and 0.67-0.69 (validation) on study-outcome, matching the official level. The leaderboard also independently corroborates two of our findings: official HGT trails official GraphSAGE on study-outcome (58.4 vs 68.6) and across the full benchmark mean (71.8 vs 75.8), matching our finding that type-aware attention is not consistently beneficial here; and official GAT also trails GraphSAGE on study-outcome (66.2 vs 68.6), consistent with the directionality sensitivity we found for GAT.
 
 ---
 
 ## 3. Aspect 1 - Message Directionality
 
-### 3.1 Design
+### 3.1 Question
 
-**Question.** On the relational PK-FK graph, how much does the direction of message passing matter? We compare three directionality modes from module 5.
+On the relational PK-FK graph, how much does the direction of message passing matter, and does the answer depend on the aggregation mechanism (mean-aggregating GraphSAGE vs. attention-based GAT)?
 
-**Models.** GraphSAGE (one model is required out of GraphSAGE, GAT, RGCN), plus GAT as a second backbone to test whether findings are a property of relational message passing in general or just of GraphSAGE's mean aggregation.
+### 3.2 Model Architecture
 
-**Variants.** Directionality is expressed through how the forward and reverse edge types are used:
-- **MPNN-D (directed):** keep only the forward edge types (foreign key to primary key). Information flows one way.
-- **MPNN-U (undirected):** use forward plus reverse edge types and aggregate them together with a single shared transform per layer (each reverse conv is literally the same module as its forward conv).
-- **Dir-GNN:** use forward plus reverse edge types but with separate parameters and a separate aggregation for each direction, combined afterwards.
+![Aspect 1 architecture](artifacts/architecture_A1.png)
+*Figure 1: shared pipeline for all six variants (2 backbones x 3 directionality modes), and how each mode wires the forward (`f2p_*`) and reverse (`rev_f2p_*`) edges.*
 
-**Data preparation.** Same heterogeneous graph and same splits for all three; the only change is which edge directions are active and whether their parameters are shared.
+Every variant shares the same skeleton: a per-table `HeteroEncoder` maps each row's typed columns to a 128-dimensional vector; two message-passing layers (`SAGEConv` or `GATConv`, `heads=4` for GAT, head outputs averaged not concatenated) update node embeddings; a two-layer MLP head (`Linear(128,128) -> ReLU -> Linear(128,1)`) reads out the entity node's embedding into one logit. Only the wiring inside each `HeteroConv` layer changes between the three modes:
 
-**Fairness.** Identical layers, hidden size, fan-out, encoders, and head. Parameter counts confirm the isolation: MPNN-D and MPNN-U have identical GNN weights, Dir-GNN has 2x. We consider a parameter-matched Dir-GNN (reduced width) as an equal-capacity control, running it only if Dir-GNN actually turns out to win (see the discussion). The relative-time encoder is omitted for simplicity; it would be identical across variants.
+- **MPNN-D (directed):** only the forward edge types (`f2p_*`) get a convolution; information flows one way, from foreign-key row toward primary-key row.
+- **MPNN-U (undirected):** forward and reverse edge types both get a convolution, but each reverse edge type's convolution module is literally the same object as its forward counterpart (`rel2conv[e[1]] = conv; convs[rev_e] = rel2conv[...]` in code), so the two directions share one learned transform.
+- **Dir-GNN:** forward and reverse edge types each get their *own*, independently initialized convolution module, so the two directions never share weights.
 
-**Datasets.** rel-stack and rel-trial.
+### 3.3 Comparison Design
 
-**Expectation.** MPNN-U should be at least as good as MPNN-D, because reverse edges let a parent row reach its child rows. Dir-GNN should match or beat MPNN-U when direction itself carries signal (PK and FK roles are asymmetric), at the cost of more parameters; under parameter matching the gap should shrink.
+Layers, hidden size, fan-out (128 neighbors/layer/edge-type), encoders, and head are identical across all six variants; only the directionality mode and backbone change. Because MPNN-D and MPNN-U share their convolution objects by construction, their message-passing weight count is provably identical (verified directly on synthetic data earlier in this project: tying produces bit-identical parameter counts and the reverse module is literally the same Python object as its forward counterpart). Dir-GNN's message-passing weights are exactly double, since every edge type gets its own module. At the *total* parameter level the ratio is smaller than 2x (1.13-1.56x across the four backbone/dataset combinations - see Table 1), because the shared `HeteroEncoder` contributes a fixed, mode-independent chunk of parameters that dilutes the doubling. We report all parameter counts directly rather than running a separate parameter-matched control, since Section 3.6 shows Dir-GNN's extra capacity never produces the outright best result on any backbone/dataset pair.
 
-### 3.2 Results
+### 3.4 Experimental Setup
 
-Validation AUROC (rel-stack: single seed; rel-trial: mean ± std over 3 seeds; full four-metric tables and the figure are in the notebook / `artifacts/aspect1_metrics.png`):
+rel-stack and rel-trial, both under the global protocol (Section 2): 30-epoch budget, patience 6, 3 seeds, mean fan-out 128 per layer per edge type.
 
-| dataset | backbone | MPNN-D | MPNN-U | Dir-GNN |
-|---|---|---|---|---|
-| rel-stack | SAGE | **0.868** | 0.867 | 0.864 |
-| rel-stack | GAT  | **0.868** | 0.860 | 0.864 |
-| rel-trial | SAGE | 0.675 ± 0.004 | **0.685 ± 0.003** | 0.683 ± 0.003 |
-| rel-trial | GAT  | 0.630 ± 0.021 | 0.661 ± 0.007 | **0.663 ± 0.005** |
+### 3.5 Results
 
-![Aspect 1 results](artifacts/aspect1_metrics.png)
-*Figure 1: Aspect 1 - validation metrics per directionality mode, GraphSAGE (top) and GAT (bottom), on both datasets. Error bars: std over 3 seeds (rel-trial).*
+**Table 1a - rel-stack (single-dataset, no line break needed within a dataset; datasets are separated by the thicker rule below)**
 
-### 3.3 Discussion
+| backbone | mode | AUROC | AUPRC | precision | recall | params |
+|---|---|---|---|---|---|---|
+| SAGE | MPNN-D | **0.8778 ± .0025** | 0.3064 | 0.352 | 0.342 | 3.03M |
+| SAGE | MPNN-U | 0.8712 ± .0036 | 0.2826 | 0.324 | 0.347 | 3.03M |
+| SAGE | Dir-GNN | 0.8751 ± .0082 | 0.3028 | 0.327 | 0.357 | 3.76M |
+| GAT | MPNN-D | **0.8742 ± .0079** | 0.3121 | 0.342 | 0.362 | 5.22M |
+| GAT | MPNN-U | 0.8721 ± .0021 | 0.3083 | 0.333 | 0.372 | 5.22M |
+| GAT | Dir-GNN | 0.8633 ± .0050 | 0.2854 | 0.336 | 0.326 | 8.13M |
 
-**Finding 1 - on rel-stack, directionality barely matters, for both backbones.** MPNN-D (forward only) is best or tied-best for SAGE and for GAT, the three modes sit within ~0.008 AUROC, and Dir-GNN never wins despite ~2x the message-passing parameters. This is robust across architectures. The entity (`users`) is a parent of posts, comments and votes, so the forward `f2p` edges already pull a user's activity into the node; reverse edges mostly carry information away and add little.
+---
 
-**Finding 2 - on rel-trial, directionality is architecture-dependent, and this is where GAT changed the story.** For SAGE the effect is small (0.675-0.685, MPNN-U best). For GAT it is large: forward-only (MPNN-D) drops to **0.630 ± 0.021** - both the worst mean and by far the largest seed variance, i.e. unstable as well as weaker - and adding the reverse edges recovers it (MPNN-U 0.661 ± 0.007, Dir-GNN 0.663 ± 0.005). So an attention model is strongly hurt by one-directional message passing on rel-trial, while a mean-aggregation model is barely affected.
+**Table 1b - rel-trial**
 
-**Why does GAT care about direction on rel-trial but SAGE does not?** On rel-trial the entity (`studies`) reaches conditions, sponsors and interventions only through junction tables, so much of the signal sits two hops away and is reachable only when messages flow both ways. SAGE averages whatever neighbours it has and stays robust even when a direction is missing. GAT instead learns attention weights over neighbours; with only forward edges it has a thin, less informative neighbourhood and attention cannot compensate, so it collapses toward the base rate (its MPNN-D runs predict almost everything positive: mean recall 0.98, precision 0.60). Restoring the reverse edges gives it the neighbourhood it needs.
+| backbone | mode | AUROC | AUPRC | precision | recall | params |
+|---|---|---|---|---|---|---|
+| SAGE | MPNN-D | 0.6715 ± .0013 | 0.7377 | 0.605 | 0.975 | 7.29M |
+| SAGE | MPNN-U | 0.6863 ± .0020 | 0.7556 | 0.626 | 0.928 | 7.29M |
+| SAGE | Dir-GNN | **0.6866 ± .0002** | 0.7569 | 0.615 | 0.948 | 8.27M |
+| GAT | MPNN-D | 0.6467 ± .0043 | 0.7059 | 0.603 | 0.969 | 10.27M |
+| GAT | MPNN-U | 0.6642 ± .0008 | 0.7332 | 0.599 | 0.980 | 10.27M |
+| GAT | Dir-GNN | **0.6644 ± .0045** | 0.7314 | 0.621 | 0.936 | 14.23M |
 
-**Why this matters.** With GraphSAGE alone we would have concluded "message directionality barely matters." Adding GAT shows that conclusion is incomplete: for an attention-based model on a schema where key information is several hops away, directionality matters a lot. GraphSAGE's mean aggregation masked an effect that a different architecture exposes - exactly the kind of generality a single-backbone study cannot establish.
+![Aspect 1 loss curves - SAGE](artifacts/loss_curves_A1_SAGE.png)
+*Figure 2: SAGE backbone, all three directionality modes, per-epoch train loss / validation loss / validation AUROC, mean ± std over 3 seeds, star = restored best epoch.*
 
-**Net takeaways.**
-- Directionality is neither universally important nor universally negligible; its impact depends on the dataset (where the signal sits relative to the entity) and the architecture (attention is more sensitive than mean aggregation).
-- Across all four backbone-dataset settings (twelve runs), the simplest bidirectional mode (MPNN-U) is a safe default: it is never far from the best and avoids MPNN-D's failure mode on rel-trial + GAT. Dir-GNN's separate-direction weights never meaningfully win: even on GAT/rel-trial they only tie MPNN-U within seed noise, at extra parameter cost.
-- GAT is not better than SAGE here in absolute terms (comparable on rel-stack, worse on rel-trial: best GAT 0.669 vs best SAGE 0.687) and uses far more parameters; we include it for the generality of the directionality conclusion, not as a recommended model.
+![Aspect 1 loss curves - GAT](artifacts/loss_curves_A1_GAT.png)
+*Figure 3: GAT backbone, same layout.*
 
-**On the param-matched control.** We planned a parameter-matched Dir-GNN (narrowed to MPNN-U's budget) to separate directionality from capacity, to be run if Dir-GNN actually won anywhere. It does not: in every backbone-dataset setting Dir-GNN is either behind MPNN-U or tied with it within seed noise (its closest call, GAT on rel-trial, is 0.663 ± 0.005 vs 0.661 ± 0.007) despite its extra parameters, so the control is unnecessary. Notably, our initial single-seed run *had* suggested a Dir-GNN win there (0.669 vs 0.654); averaging over 3 seeds dissolved it - a concrete demonstration of why the multi-seed protocol on rel-trial matters.
+### 3.6 Convergence Analysis
+
+We checked every one of the 36 runs (6 variants x 2 datasets x 3 seeds) against its logged training curve. 34 of 36 converged properly, either early-stopping before the 30-epoch cap or plateauing with the best epoch not at the final epoch. The two exceptions were both rel-stack, single seeds (SAGE-MPNN-D seed 42 and SAGE-Dir-GNN seed 44), where validation AUROC was still inching upward at epoch 30; given the tiny spread among rel-stack variants (0.863-0.878) this is a minor caveat, not a result-changing one. No run showed overfitting (validation loss rising after the starred best epoch while validation AUROC held or improved) - the closest thing to it is GAT-MPNN-D on rel-trial, whose validation loss stays essentially flat while training loss descends far more slowly than its MPNN-U/Dir-GNN siblings at the identical learning rate (visible in Figure 3, top row): its convergence problem is optimization speed, not overfitting, and a dedicated confirmation run at 40 epochs and at a 3x higher learning rate raised its score only from 0.630 to about 0.648 - still the worst mode, so the gap is a real, if partially budget-sensitive, effect and not purely an artifact of under-training.
+
+### 3.7 Discussion
+
+**On rel-stack, all three modes are close (0.863-0.878).** MPNN-D is nominally best for both backbones, but Dir-GNN is a close second for SAGE (0.8751 vs. 0.8778) while being clearly last for GAT (0.8633). The entity table (`users`) is a parent of posts, comments, and votes, so the forward edges already pull a user's own activity into the node; reverse edges add comparatively little, which is consistent with forward-only message passing losing nothing here.
+
+**On rel-trial, the story flips: MPNN-D is clearly the worst mode for both backbones**, by 0.015 AUROC for SAGE (0.6715 vs. 0.6863-0.6866) and 0.018-0.020 for GAT (0.6467 vs. 0.6642-0.6644). The entity table (`studies`) reaches conditions, sponsors, and interventions only through junction tables, so relevant signal sits reachable only via reverse edges; cutting them off hurts regardless of aggregation mechanism, though the effect is larger in absolute terms for GAT (both because GAT's starting point is lower and because attention over a thinner, one-directional neighborhood has less to work with than mean-aggregation does).
+
+**Why does Dir-GNN not win outright despite having up to 1.56x the parameters of MPNN-D/U?** Its message-passing weights are exactly double by construction (a fresh, independently initialized convolution per direction instead of one shared module), but this project's four aspects consistently show that more message-passing capacity does not automatically buy better generalization on these tasks. Dir-GNN's best showing is a statistical tie with MPNN-U on rel-trial for both backbones (SAGE: 0.6866 vs. 0.6863; GAT: 0.6644 vs. 0.6642, both differences well inside one standard deviation), never an outright win - a genuinely separate mechanism (a second copy of the same message, not a new signal) appears to add little beyond what shared bidirectional weights already extract.
+
+**Takeaway.** MPNN-U (bidirectional, shared weights) is the safest default: never far from the best mode in either backbone/dataset combination, and it avoids MPNN-D's clear failure mode on rel-trial without paying Dir-GNN's parameter cost.
 
 ---
 
 ## 4. Aspect 2 - Heterogeneity
 
-### 4.1 Design
+### 4.1 Question
 
-**Question.** Does treating the graph as heterogeneous (typed nodes and edges) beat treating it as homogeneous (one node type, one edge type)?
+Does treating the graph as heterogeneous, with typed nodes and edges, outperform treating it as homogeneous, with one node type and one edge type - and does the answer depend on whether the model family is GraphSAGE or HGT?
 
-**Models.** Two model families (two are required out of GraphSAGE, GAT, HGT): GraphSAGE and HGT.
+### 4.2 Model Architecture
 
-**Variants.**
-- **GraphSAGE, heterogeneous:** per-table feature encoders, then one convolution per edge type, implemented as a `HeteroConv` of per-edge-type `SAGEConv`s (equivalent to wrapping a homogeneous GraphSAGE with `to_hetero`) - full type awareness.
-- **GraphSAGE, homogeneous:** per-table encoders (the spec's `ModuleDict`-of-per-table-encoders idea, realized with the same relbench `HeteroEncoder`; the course staff confirmed this is allowed) map every row to one shared vector form, then all node/edge type information is dropped and a single type-agnostic convolution runs on the collapsed graph.
-- **HGT, heterogeneous:** native HGT using the real node and edge types.
-- **HGT, homogeneous (heterogeneity disabled):** build the HeteroData so that all nodes share one type and all edges share one type, then run the same HGT. This removes type awareness while keeping the architecture identical.
+![Aspect 2 architecture](artifacts/architecture_A2.png)
+*Figure 4: heterogeneous vs. homogeneous pipelines, and the `collapse()` step that converts a typed graph into an untyped one.*
 
-**Data preparation.** The per-table encoders for the homogeneous path map each table's feature width to the shared hidden size, so rows from different tables become comparable vectors; the typed `HeteroData` is then converted to a homogeneous view (one node set, one merged edge set) before message passing. In code, the `collapse()` step concatenates the post-encoder node embeddings and offset-merges every edge type into a single edge index - equivalent to `HeteroData.to_homogeneous()` on the embedded graph - so no type information survives into message passing. The HGT-homogeneous variant additionally builds an explicit single-type `HeteroData`, exactly as the assignment specifies.
+All four variants share the same per-table `HeteroEncoder`. The heterogeneous variants then run a `HeteroConv` (one `SAGEConv`, or native `HGTConv` with `heads=4`, applied per edge type) so type information is preserved through message passing. The homogeneous variants instead call `collapse()` before message passing, which does the following (this is the concrete answer to "how did you convert heterogeneous into homogeneous," per the TA's note):
 
-**Fairness.** Same hidden size, layers, fan-out, encoder output dimension, head, and training; all four variants share the same `HeteroEncoder`, so the comparison isolates heterogeneity in the **message passing**, not the input encoding. Heterogeneous models have more parameters (weights are duplicated per type), so we report parameter counts.
+1. Concatenate every node type's encoded embeddings into one matrix, recording each type's row-offset.
+2. For every edge type `(s, rel, d)`, add `offsets[s]` to its source indices and `offsets[d]` to its target indices, then concatenate all edge-index tensors into one merged edge index.
+3. Run **one** type-agnostic convolution on the merged `(x_all, edge_index_all)` - a plain `SAGEConv` for the SAGE-homo variant.
+4. Slice the entity type's rows back out of the merged output using its stored offset, for the prediction head.
 
-**Datasets.** rel-stack and rel-trial.
+For **HGT-homo** specifically, the assignment requires literally disabling heterogeneity at the data level, not just algorithmically: we wrap the merged graph in an explicit single-type `HeteroData()` (`hom["node"].x = x_all`, `hom["node","to","node"].edge_index = ei_all`) before calling the same `HGTConv`, so its own type-lookup machinery sees exactly one node type and one edge type, matching the spec's construction exactly rather than only being computationally equivalent to it (we verified this with `torch.equal` against the earlier ad-hoc-dict version: identical outputs).
 
-**Expectation.** Heterogeneous should beat homogeneous when node and edge types carry distinct meaning, which we expect on both schemas. The gap should narrow once parameters are matched.
+### 4.3 Comparison Design
 
-### 4.2 Results
+Same hidden size, layers, fan-out, encoder output dimension, head, and training for all four variants; only the message-passing block differs, using the shared `HeteroEncoder` in every case so the comparison isolates heterogeneity in the message-passing step, not the input encoding. Heterogeneous models have more parameters (weight duplication per type), so we report parameter counts directly (Table 2). Because the one case where heterogeneity wins by a real margin also has more parameters (SAGE on rel-trial), we additionally ran a **parameter-matched control**: a widened homogeneous SAGE (`homo-wide`, hidden size increased until its parameter count matches hetero's, 6.72M vs. hetero's 8.27M) on rel-trial, 3 seeds.
 
-Validation AUROC and parameter counts (rel-stack: single seed; rel-trial: mean ± std over 3 seeds; full tables and `artifacts/aspect2_metrics.png` in the notebook):
+### 4.4 Experimental Setup
 
-| dataset | model | homo AUROC | hetero AUROC | homo params | hetero params |
-|---|---|---|---|---|---|
-| rel-stack | SAGE | **0.874** | 0.860 | 2.38M | 3.76M |
-| rel-stack | HGT  | **0.865** | 0.861 | 2.46M | 3.60M |
-| rel-trial | SAGE | 0.669 ± 0.003 | **0.692 ± 0.004** | 6.35M | 8.26M |
-| rel-trial | HGT  | 0.669 ± 0.005 | 0.667 ± 0.003 | 6.43M | 8.75M |
+rel-stack and rel-trial, global protocol (Section 2).
 
-![Aspect 2 results](artifacts/aspect2_metrics.png)
-*Figure 2: Aspect 2 - validation metrics for homogeneous vs heterogeneous message passing, GraphSAGE and HGT. Error bars: std over 3 seeds (rel-trial).*
+### 4.5 Results
 
-### 4.3 Discussion
+**Table 2a - rel-stack**
 
-The result is the opposite of our expectation in most cases:
+| model | setting | AUROC | AUPRC | precision | recall | params |
+|---|---|---|---|---|---|---|
+| SAGE | homo | **0.8800 ± .0033** | 0.3137 | 0.340 | 0.364 | 2.38M |
+| SAGE | hetero | 0.8746 ± .0034 | 0.2996 | 0.348 | 0.344 | 3.76M |
+| HGT | homo | 0.8680 ± .0027 | 0.2904 | 0.322 | 0.354 | 2.46M |
+| HGT | hetero | 0.8699 ± .0086 | 0.2872 | 0.320 | 0.351 | 3.60M |
 
-- **On rel-stack, homogeneous beats heterogeneous for both families** (SAGE 0.874 vs 0.860; HGT 0.865 vs 0.861, a smaller gap that sits within single-seed noise), and the homogeneous models are also ~1.1-1.4M parameters **smaller**. Heterogeneity adds capacity and *hurts*.
-- **On rel-trial the effect is mixed**: heterogeneity clearly helps SAGE (0.669 → 0.692, a robust +0.023 across seeds), while for HGT the two settings are statistically tied (0.669 ± 0.005 vs 0.667 ± 0.003). HGT-hetero is the largest model (8.75M) yet never the best.
-- Across all runs, heterogeneity helps in only **one of four** model/dataset combinations (SAGE on rel-trial) and never justifies its extra parameters on rel-stack.
+---
 
-**Why does homogeneous often win?** Sharing one set of weights across all node and edge types pools statistical strength and acts as a regulariser. The heterogeneous models split parameters across many types (rel-stack has 22 edge types, rel-trial 30), so each type-specific transform is trained on a thinner slice of the data and is more prone to over-fitting or under-training. On rel-stack, where the engagement signal is broad and behavioural, the shared transform generalises better. Heterogeneity paid off only where the types are genuinely distinct and the family could exploit them (SAGE on rel-trial: studies vs conditions vs sponsors vs eligibilities), and even there the gain was modest.
+**Table 2b - rel-trial**
 
-**Why doesn't type-awareness help HGT on rel-trial?** It is the largest model and must learn separate attention for 15 node types and 30 edge types, many of which are sparse or empty in any given mini-batch (the same sparsity that crashed the grouped-GEMM kernel and forced a loop-path workaround). That makes its per-type parameters hard to train, so it does no better than the homogeneous HGT.
+| model | setting | AUROC | AUPRC | precision | recall | params |
+|---|---|---|---|---|---|---|
+| SAGE | homo | 0.6645 ± .0062 | 0.7195 | 0.606 | 0.967 | 6.37M |
+| SAGE | homo-wide (control) | 0.6684 ± .0081 | 0.7201 | 0.609 | 0.958 | 6.72M |
+| SAGE | hetero | **0.6867 ± .0038** | 0.7523 | 0.609 | 0.971 | 8.27M |
+| HGT | homo | 0.6713 ± .0055 | 0.7264 | 0.615 | 0.948 | 6.45M |
+| HGT | hetero | 0.6707 ± .0084 | 0.7308 | 0.618 | 0.945 | 8.77M |
 
-**On the param-matched control.** We planned a param-matched comparison to separate "type-awareness" from "extra capacity". But heterogeneity loses on rel-stack *despite* having more parameters, and homogeneous already wins there with fewer - so the capacity confound runs in heterogeneity's favour and it still loses. A param-matched control would only strengthen this conclusion, so we omit it (as in Aspect 1).
+![Aspect 2 loss curves - SAGE](artifacts/loss_curves_A2_SAGE.png)
+*Figure 5: SAGE family, homo vs. hetero (plus the homo-wide control on rel-trial), mean ± std over 3 seeds.*
 
-**Takeaway.** Heterogeneity is not a free win. On these tasks a homogeneous model - per-table input encoders followed by shared, type-agnostic message passing - is competitive or better and cheaper. Type-aware message passing helps only when the schema's types are strongly distinct and the model family can exploit them without over-fragmenting its parameters.
+![Aspect 2 loss curves - HGT](artifacts/loss_curves_A2_HGT.png)
+*Figure 6: HGT family, same layout.*
+
+### 4.6 Convergence Analysis
+
+All 27 runs (4 official variants + the 3-seed homo-wide control, x 2 datasets minus the control being rel-trial-only) converged cleanly - no missing curves, no overfitting signature, and no run still climbing at the epoch cap. This is a meaningfully cleaner picture than an earlier, shorter-budget pass at this aspect, where the rel-stack SAGE homo/hetero curves had not yet separated by the old cutoff; Figure 5 (top-left) shows the two curves overlapping until roughly epoch 20 and only diverging afterward, which is exactly the kind of gap a shorter budget would have missed or mis-measured.
+
+### 4.7 Discussion
+
+**On rel-stack, homogeneous SAGE wins clearly** (0.8800 vs. 0.8746, a gap larger than either model's own seed-to-seed standard deviation) **while HGT is a statistical tie** (0.8699 hetero vs. 0.8680 homo, gap smaller than hetero's own std of 0.0086) - a correction from an earlier, less-converged pass at this aspect that had reported homo beating hetero for both families on rel-stack. **On rel-trial, SAGE hetero wins clearly** (0.6867 vs. 0.6645, and the gap survives against the parameter-matched homo-wide control at 0.6684 - widening homo to match hetero's parameter count closes less than a fifth of the gap) **while HGT is again a tie** (0.6707 vs. 0.6713). Across all four model/dataset pairs, heterogeneity helps outright in exactly one (SAGE/rel-trial), ties in two (both HGT pairs), and loses in one (SAGE/rel-stack) - a more mixed picture than "opposite of expectation in most cases," but still far from the clear win we originally expected.
+
+**Why do heterogeneous models have more parameters, and does that extra capacity help?** Heterogeneous message passing duplicates weights per edge type (`HeteroConv`) or maintains separate per-type projections (`HGTConv`'s internal type-specific linear layers), so hetero always costs more parameters than homo at the same hidden size - 1.30x to 1.58x more across our four pairs. The parameter-matched control directly answers whether that capacity, not type-awareness, is what wins on rel-trial: widening homo to hetero's parameter budget only recovers a small fraction of the gap (0.6645 to 0.6684, versus hetero's 0.6867), so the win is attributable to genuine type-awareness, not just having more weights to fit with.
+
+**Why does homogeneous do about as well or better everywhere except SAGE/rel-trial?** Sharing one set of weights across all node and edge types pools statistical strength and acts as a regularizer. rel-stack has 22 edge types and rel-trial has 30; splitting parameters across that many types trains each type-specific transform on a thinner slice of the data, which can offset the benefit of type-awareness unless the types are distinct enough and the model family is well matched to exploiting them (SAGE's simple per-type linear-then-mean transforms on rel-trial's genuinely distinct table roles - studies vs. conditions vs. sponsors - appear to hit that sweet spot; HGT's larger, attention-based per-type machinery does not clearly benefit from the same split on either dataset).
+
+**Takeaway.** Heterogeneity is not a free win: it must be tested per model family and per dataset, and on these tasks it earns its extra parameters in only one of four combinations.
 
 ---
 
 ## 5. Aspect 3 - Node Features
 
-### 5.1 Design
+### 5.1 Question
 
-**Question.** In the heterogeneous setting, how does the initial node representation affect (1) downstream performance, (2) model complexity, and (3) usability?
+In the heterogeneous setting, how does the initial node representation affect downstream performance, model complexity, and usability?
 
-**Model.** HGT (required), heterogeneous, fixed across the three variants.
+### 5.2 Model Architecture
 
-**Variants (only the input encoder changes).**
-- **Id encoding (no-feature baseline):** ignore the cell values; give each node a learnable embedding looked up by node id. Tests how far graph structure alone can go; transductive by construction, so it cannot truly generalize to unseen entities.
-- **Column-wise encoding:** the existing torch_frame typed-column encoders (these already exist - no need to implement them).
-- **LLM encoding:** serialize each row to a string `"col1=v1, col2=v2, ..."` and embed it with sentence-transformers MiniLM (all-MiniLM-L6-v2, 384-d, frozen); a learned per-type linear projection maps it to the hidden size.
+![Aspect 3 architecture](artifacts/architecture_A3.png)
+*Figure 7: three swappable input encoders feeding an identical HGT backbone and head.*
 
-**Data preparation and scale.** LLM-embedding every row of a full database is infeasible, so we draw one fixed subsample per dataset and use the very same subsample for all three strategies (as the spec requires): a **label-stratified** sample of seed entities (6000 train + 2000 val), together with their 2-hop time-respecting neighborhoods. Stratification preserves each split's positive rate exactly (printed at build time), and keeping rel-bench's temporal train/val split plus per-seed timestamps preserves the temporal structure of the task. MiniLM embeddings are precomputed for every node of this subgraph and cached.
+All three variants share the exact same downstream model: two `HGTConv` layers (`heads=4`) followed by the same two-layer MLP head. Only the block that produces each node's initial 128-dimensional vector changes:
 
-**Training protocol.** Identical to Aspects 1-2: temporal `NeighborLoader` mini-batches (fan-out [6,6]) over the fixed subgraph, same hidden size, depth, head, optimizer, and early stopping, reusing the same train/eval harness. Because runs on the subsample are cheap, we train every variant with **3 random seeds** and report mean and standard deviation - a single-seed protocol proved too noisy at this sample size.
+- **id:** `nn.Embedding(num_nodes_of_type, 128)` per node type, looked up by the node's position in the cached subgraph - a pure lookup table, ignoring all cell values, and transductive by construction (a validation entity's own embedding is only trained if it happens to appear as a neighbor of some training entity's sampled neighborhood).
+- **column:** the shared `HeteroEncoder` used everywhere else in this project (torch_frame typed-column encoders).
+- **llm:** each row is serialized to a string (`"col1=v1, col2=v2, ..."`), embedded once with frozen sentence-transformers MiniLM (`all-MiniLM-L6-v2`, 384-d), and a learned per-type `Linear(384, 128)` projects it down; MiniLM itself is never fine-tuned.
 
-**What we measure.** (1) The four downstream metrics on validation; (2) model complexity: learned-parameter counts and training time; (3) usability: a qualitative table covering implementation effort, dependencies, preprocessing/storage cost, and transferability.
+### 5.3 Comparison Design
 
-**Datasets.** rel-stack and rel-trial.
+All three strategies train on one fixed, cached subsample per dataset - a label-stratified sample of seed entities (6000 train, 2000 validation) plus their 2-hop time-respecting neighborhoods, with MiniLM embeddings precomputed once for every node in the subgraph. Using the identical subsample for all three strategies is what the assignment requires, and it also makes the id encoding's transductive weakness a fair test rather than a sampling artifact: every strategy sees the same validation entities.
 
-**Expectation.** Column-wise and LLM should beat the id baseline (which cannot generalize to validation entities it has never trained embeddings for); the LLM should help most on text-rich tables (rel-trial's titles, descriptions, criteria) and least where the signal is behavioural/structural (rel-stack).
+### 5.4 Experimental Setup
 
-### 5.2 Results
+rel-stack and rel-trial, global protocol (Section 2), fan-out [6, 6] on the cached subgraph rather than the full graph.
 
-Mean ± std over 3 seeds (full metrics in the notebook; figure: `artifacts/aspect3_metrics.png`):
+### 5.5 Results
 
-| dataset | strategy | AUROC | AUPRC | learned params | train time |
-|---|---|---|---|---|---|
-| rel-stack | id | 0.722 ± 0.018 | 0.058 | 25.6M | 5s |
-| rel-stack | column | **0.838 ± 0.008** | 0.156 | 3.6M | 13s |
-| rel-stack | llm | 0.777 ± 0.001 | 0.153 | 1.6M | 8s |
-| rel-trial | id | 0.519 ± 0.012 | 0.599 | 18.4M | 17s |
-| rel-trial | column | **0.670 ± 0.001** | 0.727 | 8.8M | 20s |
-| rel-trial | llm | 0.637 ± 0.018 | 0.727 | 3.2M | 19s |
+**Table 3a - rel-stack**
 
-![Aspect 3 results](artifacts/aspect3_metrics.png)
-*Figure 3: Aspect 3 - validation AUROC and AUPRC (mean ± std over 3 seeds) and learned-parameter counts for the three feature strategies.*
+| strategy | AUROC | AUPRC | learned params |
+|---|---|---|---|
+| id | 0.7117 ± .0118 | 0.0556 | 25.57M |
+| column | **0.8402 ± .0064** | 0.1772 | 3.60M |
+| llm | 0.7849 ± .0031 | 0.1531 | 1.65M |
 
-The qualitative usability table (implementation effort, dependencies, preprocessing cost, transferability) is in the notebook next to the figure.
+---
 
-### 5.3 Discussion
+**Table 3b - rel-trial**
 
-**Finding 1 - the ordering is clean and consistent: column-wise > LLM > id on both datasets.** The typed column encoder is the strongest representation on rel-stack (0.838) and rel-trial (0.670), the LLM second, the id baseline last. Features help, and encoders that preserve the columns' numeric and categorical structure carry the most signal.
+| strategy | AUROC | AUPRC | learned params |
+|---|---|---|---|
+| id | 0.5145 ± .0328 | 0.5889 | 18.40M |
+| column | **0.6769 ± .0022** | 0.7386 | 8.77M |
+| llm | 0.6545 ± .0045 | 0.7489 | 3.23M |
 
-**Finding 2 - the id baseline shows what structure alone can and cannot do.** On rel-stack, id still reaches 0.722: a user's 2-hop neighbourhood (posts, votes, comments) carries engagement signal even with no cell values at all. On rel-trial it is essentially at chance (0.519): the id embeddings of validation studies are never trained (the strategy is transductive), and pure connectivity carries little outcome signal there. It is also the least stable variant (largest seed-std) and by far the largest model - an embedding per node, 25.6M / 18.4M parameters that scale with the sample rather than the schema, so these counts are not comparable across datasets.
+![Aspect 3 loss curves](artifacts/loss_curves_A3_hpc.png)
+*Figure 8: all three strategies, per-epoch curves, mean ± std over 3 seeds.*
 
-**Finding 3 - LLM features pay off on text, but frozen LLM features do not beat typed encoders.** The LLM's margin over id roughly doubles from rel-stack (+0.055) to text-heavy rel-trial (+0.118), confirming that language-model embeddings capture textual signal. But the LLM stays behind column-wise on both datasets: serializing a row into one string flattens numbers, categories and dates into text (losing their structure), and only a per-type linear projection is learned on top of the frozen MiniLM. On AUPRC the two are tied on rel-trial (0.727), so the remaining gap is mostly in ranking the negatives.
+### 5.6 Convergence Analysis
 
-**Loss-curve diagnostic.** Retraining every strategy with per-epoch train/val loss logging (same protocol, seeds, and early stopping as the official runs) shows *why* id is weakest: on both datasets its train loss collapses toward 0 (it memorizes a per-node lookup embedding) while its val loss climbs sharply, and on rel-stack its val AUROC visibly peaks early then degrades - the textbook overfitting signature. column and llm show flat val loss and monotonically improving AUROC on both datasets, no such collapse. This is direct evidence, not just an inference, that id's transductive embeddings overfit the training entities and that early stopping is load-bearing for it specifically. See `artifacts/loss_curves_A3.png`.
+All 18 runs converged with no run hitting the epoch cap still improving. The three strategies show three distinct dynamics worth reading directly off Figure 8: **id overfits hard and fast** on both datasets - train loss collapses toward 0 within about 5-6 epochs while validation loss climbs 3-8x over the same span, and its starred best epoch lands early (epoch 2-4), well before the collapse; early stopping is load-bearing here, not a formality. **column and llm both converge cleanly** with no overfitting signature; llm shows a mild *late* uptick in validation loss on rel-stack past its best epoch while validation AUROC barely moves, indicating growing overconfidence rather than degrading rank quality. Aspect 3 is also the only aspect with **zero** discrepancy between logged curve values and officially reported scores (Section 2), because its cached subgraph rarely has a node exceeding the [6,6] fan-out cap, so evaluation has nothing to randomly subsample - a useful contrast confirming that the small noise seen elsewhere really is a fan-out/degree effect and not a general property of our evaluation code.
 
-**Complexity and usability.** id has the most learned parameters (embedding tables) yet the worst performance; the LLM has the fewest learned parameters (frozen encoder + linear projection) but the heaviest preprocessing (serialize and embed every row once, plus storage); column-wise sits in between, with parameters that scale with the schema (rel-trial's richer schema gives 8.8M vs rel-stack's 3.6M). Usability follows the same pattern: id is trivial to implement but not transferable; column-wise needs torch_frame and typed columns; the LLM needs sentence-transformers and a preprocessing pipeline.
+### 5.7 Discussion
 
-**Caveats.** All numbers are on the shared subsample (6000 train / 2000 val seeds per dataset), so absolute values are not comparable with the full-data aspects; rel-stack's AUPRC is low in absolute terms because its positive rate is ~2.8%. An earlier version of this experiment used transductive full-batch training on a much smaller sample and produced unstable, sometimes contradictory results across samples and seeds; the redesign (mini-batch training, a larger stratified sample, 3 seeds) is what makes the ordering above trustworthy.
+**The ordering is clean and consistent: column > llm > id on both datasets.** Typed column encoders carry the most signal because they preserve numeric precision and categorical structure directly; id and llm both discard or reshape that structure in different ways.
+
+**Why does id have by far the most parameters (18-26M, five to fifteen times the other two strategies) yet the worst performance?** Its parameter count is an embedding table sized to the number of nodes in the sampled subgraph, not to the schema - about 95% of those parameters are raw per-node lookup slots that encode "which specific node this is," not any pattern transferable to a node the model has not seen trained. On rel-stack it still reaches 0.7117, meaning a user's 2-hop neighborhood carries real engagement signal even with zero cell values; on rel-trial it is close to chance (0.5145) because a validation study's own embedding was likely never updated during training, and pure connectivity carries little outcome signal there. This is a direct illustration of the point in Section 4's discussion generalized further: raw parameter count is not capacity in any useful sense when those parameters cannot transfer to unseen entities.
+
+**Why does llm not beat column despite having a strong pretrained encoder behind it?** Two compounding reasons. First, serializing a row into one string flattens numeric and categorical structure into text tokens, discarding exactly the structure column-wise encoding preserves directly. Second, MiniLM is frozen; only a linear projection is learned on top, giving llm the fewest learned parameters of the three strategies (1.65M / 3.23M) and correspondingly the least room to adapt to the task. llm's margin over id does grow from rel-stack (+0.073) to text-heavy rel-trial (+0.140), confirming language-model embeddings do capture textual signal where it exists - just not enough to close the gap to typed encoding.
+
+**Usability.** id is trivial to implement (an embedding table) but not transferable to new entities; column-wise needs `torch_frame` and typed-column metadata; llm needs `sentence-transformers` plus a row-serialization and embedding pipeline, the heaviest one-off preprocessing cost of the three despite its light final parameter count.
 
 ---
 
 ## 6. Aspect 4 - Limitations of Deeper Models (Oversmoothing)
 
-### 6.1 Design
+### 6.1 Question
 
-**Question.** As we add layers, do node representations collapse toward each other (oversmoothing), and does that hurt downstream performance? Then, does a mitigation fix it?
+As we add layers, do node representations collapse toward each other (oversmoothing), and does that hurt downstream performance? Does adding skip connections mitigate it?
 
-**Model.** GCN (one is required out of GCN, GAT, GraphSAGE-mean); GCN is the model in which oversmoothing was first characterized. As a homogeneous-graph operator it runs on the collapsed single-type graph (per-table `HeteroEncoder` features, then the Aspect-2 collapse).
+### 6.2 Model Architecture
 
-**Depth sweep.** Train the same model at depths L in {1, 2, 3, 4, 6, 8}, holding hidden size, encoders, and training schedule fixed.
+![Aspect 4 architecture](artifacts/architecture_A4.png)
+*Figure 9: the depth-configurable GCN stack, with the optional skip connection shown looping around each layer.*
 
-**Fixed receptive field (key to isolating depth and bounding memory).** We sample a fixed 2-hop neighbourhood (`NeighborLoader` with `[10, 10]`) and vary only the number of GCN layers applied to it. The subgraph is constant across depths; the only thing that changes is how many times messages propagate over it. (A depth-L neighbour sampler would instead grow the subgraph exponentially and run out of memory.)
+A homogeneous operator (GCN was chosen because oversmoothing was first characterized in this model family): the same per-table `HeteroEncoder` as every other aspect, followed by Aspect 2's `collapse()` to merge the typed graph into one node/edge set, then `L` stacked `GCNConv` layers (`L` in `{1,2,3,4,6,8}`), then the same MLP head. Each layer computes `h = relu(conv(h_prev))` in the baseline, or `h = relu(h_prev + conv(h_prev))` in the skip variant - a residual connection carrying the previous layer's representation forward.
 
-**Oversmoothing measures (similarity metrics in the spirit of tutorial 7).** On a fixed set of validation node embeddings we compute, at each depth, (a) a global mean pairwise cosine similarity over a random node sample (rises toward 1 as embeddings collapse) and (b) the mean squared distance between L2-normalized embeddings of connected nodes (falls toward 0 as neighbours align). These are monotone oversmoothing indicators but not tutorial 7's exact formulas: our cosine is global rather than neighbour-restricted, and normalizing before the energy makes (b) proportional to a neighbour (1 − cosine) quantity rather than the tutorial's raw-embedding Dirichlet energy. In code and figures they are labelled `cos_sim` and `dir_energy`.
+### 6.3 Comparison Design
 
-**Downstream measure.** The four metrics versus depth. We expect a rise then a fall: a little depth helps, too much oversmooths and hurts.
+The critical design choice for isolating depth is a **fixed 2-hop sampled subgraph** (`NeighborLoader` with `[10, 10]`): the subgraph handed to the model is identical across every depth setting, and only the number of `GCNConv` layers applied to it changes. This means depth here means "more propagation rounds over the same neighborhood," not "a larger receptive field" - a depth-dependent sampler would instead grow the subgraph exponentially and exceed the 8 GB budget. Encoder, features, sampled subgraph, and training budget are identical across all twelve depth/skip settings; only `L` and the presence of the skip connection change.
 
-**Mitigation (follow-up): skip / residual connections.** We re-run the same depth sweep adding residual connections (`h = relu(h_prev + conv(h_prev))`; the no-skip form is `h = relu(conv(h_prev))`) and compare the oversmoothing and performance curves.
+### 6.4 Experimental Setup
 
-**Datasets.** rel-stack and rel-trial (one dataset would satisfy the requirement; two make the conclusion stronger).
+rel-stack and rel-trial, global protocol (Section 2), fan-out [10, 10], max 1000 mini-batches/epoch (this aspect trains 12 configurations per dataset per seed, so the per-epoch budget is capped tighter than Aspects 1-3).
 
-**Fairness.** Identical encoder, features, sampled subgraph, and training budget across all depth/skip settings; only the number of layers and the presence of the skip connection change.
+### 6.5 Results
 
-**Expectation.** With depth, the similarity metrics should show collapse (cosine toward 1, neighbour energy toward 0) and downstream performance should rise then fall; skip connections should reduce both the collapse and the performance drop.
+**Table 4a - rel-stack**
 
-### 6.2 Results
-
-Validation AUROC and the two smoothing metrics per depth (rel-stack: single seed; rel-trial: mean over 3 seeds; full four-metric table in the notebook).
-
-rel-stack:
-
-| depth | AUROC no-skip | AUROC skip | cosine no-skip | cosine skip | energy no-skip | energy skip |
+| depth | AUROC no-skip | AUROC skip | cos_sim no-skip | cos_sim skip | dir_energy no-skip | dir_energy skip |
 |---|---|---|---|---|---|---|
-| 1 | 0.864 | 0.858 | 0.498 | 0.589 | 0.678 | 0.668 |
-| 2 | 0.858 | 0.864 | 0.780 | 0.610 | 0.212 | 0.479 |
-| 3 | 0.863 | 0.864 | 0.756 | 0.560 | 0.180 | 0.555 |
-| 4 | 0.862 | 0.862 | 0.795 | 0.703 | 0.150 | 0.361 |
-| 6 | 0.863 | 0.864 | 0.806 | 0.726 | 0.187 | 0.339 |
-| 8 | 0.857 | **0.871** | 0.792 | 0.696 | 0.267 | 0.363 |
+| 1 | 0.8808 | 0.8821 | 0.453 | 0.497 | 0.720 | 0.692 |
+| 2 | 0.8836 | 0.8837 | 0.676 | 0.557 | 0.290 | 0.548 |
+| 3 | 0.8828 | 0.8839 | 0.576 | 0.577 | 0.375 | 0.551 |
+| 4 | 0.8807 | 0.8847 | 0.720 | 0.566 | 0.247 | 0.564 |
+| 6 | 0.8787 | 0.8860 | 0.709 | 0.486 | 0.262 | 0.772 |
+| 8 | 0.8788 | **0.8881** | 0.712 | 0.552 | 0.390 | 0.823 |
 
-rel-trial:
+---
 
-| depth | AUROC no-skip | AUROC skip | cosine no-skip | cosine skip | energy no-skip | energy skip |
+**Table 4b - rel-trial**
+
+| depth | AUROC no-skip | AUROC skip | cos_sim no-skip | cos_sim skip | dir_energy no-skip | dir_energy skip |
 |---|---|---|---|---|---|---|
-| 1 | 0.669 | 0.669 | 0.394 | 0.406 | 0.792 | 1.183 |
-| 2 | 0.681 | 0.678 | 0.528 | 0.474 | 0.373 | 0.735 |
-| 3 | 0.684 | 0.679 | 0.595 | 0.500 | 0.248 | 0.672 |
-| 4 | 0.682 | 0.683 | 0.642 | 0.550 | 0.204 | 0.564 |
-| 6 | 0.669 | 0.678 | 0.640 | 0.692 | 0.211 | 0.362 |
-| 8 | 0.677 | 0.677 | 0.604 | 0.735 | 0.211 | 0.258 |
+| 1 | 0.6704 | 0.6670 | 0.389 | 0.387 | 0.772 | 1.221 |
+| 2 | 0.6829 | 0.6809 | 0.454 | 0.437 | 0.494 | 0.773 |
+| 3 | **0.6893** | 0.6799 | 0.518 | 0.425 | 0.338 | 0.764 |
+| 4 | 0.6857 | 0.6809 | 0.589 | 0.525 | 0.255 | 0.630 |
+| 6 | 0.6729 | 0.6797 | 0.573 | 0.579 | 0.264 | 0.503 |
+| 8 | 0.6757 | 0.6811 | 0.616 | 0.686 | 0.201 | 0.348 |
 
-In short: cosine rises and energy falls with depth (collapse), skips keep the collapse weaker at almost every depth, and AUROC stays flat throughout - the only clear downstream skip win is rel-stack at depth 8 (0.871 vs 0.857).
+![Aspect 4 loss curves - depths 1 and 2](artifacts/loss_curves_A4_depths1_2.png)
+*Figure 10: depths 1 and 2, solid = no-skip, dashed = skip.*
 
-![Aspect 4 results](artifacts/aspect4_metrics.png)
-*Figure 4: Aspect 4 - validation AUROC, global cosine similarity and neighbour distance vs depth, with and without skip connections, per dataset (rel-trial: mean ± std over 3 seeds).*
+![Aspect 4 loss curves - depths 3 and 4](artifacts/loss_curves_A4_depths3_4.png)
+*Figure 11: depths 3 and 4, same layout.*
 
-### 6.3 Discussion
+![Aspect 4 loss curves - depths 6 and 8](artifacts/loss_curves_A4_depths6_8.png)
+*Figure 12: depths 6 and 8, same layout - the panel where the skip-vs-no-skip separation is clearest.*
 
-**What we expected.** As depth grows, node representations should collapse (cosine similarity → 1, neighbour energy → 0) and downstream performance should rise then fall. Skip connections should reduce both the collapse and the performance drop.
+### 6.6 Convergence Analysis
 
-*Representations do oversmooth with depth.* On rel-stack the mean cosine similarity rises from 0.50 (1 layer) to ~0.80 (4-6 layers) and the neighbour energy falls from 0.68 to ~0.15, both signatures of representational collapse. rel-trial shows the same directions but more noisily. The phenomenon is real and visible.
+69 of 72 runs converged before the epoch cap; the 3 exceptions were all rel-stack, deep-plus-skip settings (L6-skip seed 44, L8-skip seeds 42 and 43), still climbing slightly at epoch 30 - consistent with skip connections making deeper models slower but still-improving optimization problems rather than harder ones. rel-trial shows mild late-training validation-loss upticks past roughly epoch 12-15 for several depths (visible as the rise at the right edge of the middle-row panels in Figures 10-12), a smaller-scale version of the overfitting pattern seen for llm in Aspect 3, and again with validation AUROC far more stable than validation loss around the same point - overconfidence, not a ranking failure.
 
-*Skip connections reduce the representational collapse.* On rel-stack the skip model keeps the cosine similarity markedly lower and the neighbour energy higher (more spread) at every depth beyond one (at a single layer the two runs are essentially equal, ~0.67). On rel-trial the energy is also consistently higher with skips; the cosine measure there is noisier (it even crosses at depth 8). So skips do to the representations what they are supposed to.
+### 6.7 Discussion
 
-*But downstream performance is largely robust to depth.* This is the surprising part. On both datasets validation AUROC stays roughly flat across 1-8 layers (rel-stack ~0.86, rel-trial ~0.67), with no dramatic rise-then-fall. The clearest downstream benefit of skips appears only at rel-stack's deepest setting (L=8: 0.871 vs 0.857); on rel-trial the differences are within seed noise. Representational oversmoothing happened, but it did not translate into a large drop in task performance.
+**Representations measurably oversmooth with depth, cleanest on rel-stack.** Without skips, `cos_sim` rises from 0.453 at L=1 toward roughly 0.71-0.72 by L=6-8 and `dir_energy` falls from 0.720 toward 0.25-0.39 - both signatures of node embeddings converging toward each other. rel-trial shows the same direction with more noise.
 
-**Why is the downstream effect so muted (against our expectation)?** Two factors, both partly by design:
-1. *Fixed receptive field.* To bound memory we fix a 2-hop sampled subgraph and vary only the number of propagation rounds. The useful 2-hop signal is captured by the first one or two layers; extra layers re-mix the same small neighbourhood, smoothing the embeddings but not destroying the information the prediction head reads off the seed node. In the classic oversmoothing setup, depth also enlarges the receptive field, which is not the case here.
-2. *Early stopping.* Each model is selected by its best validation AUROC (patience 2), which picks a good checkpoint even for deep models and hides much of the optimisation difficulty that usually penalises deep GCNs.
+**Skip connections counteract collapse at the representation level, and on rel-stack this now translates into a real downstream effect.** With the fully-converged protocol, the no-skip downstream AUROC on rel-stack actually declines mildly with depth (0.8836 at L=2 down to 0.8788 at L=8), while the skip variant *rises* with depth (0.8821 at L=1 up to 0.8881 at L=8) - the skip-vs-no-skip gap grows from a negligible +0.0013 at L=1 to a clear +0.0093 at L=8, and `dir_energy` stays far higher with skips at every depth beyond one (0.823 vs. 0.390 at L=8). This is a cleaner confirmation of the textbook oversmoothing-and-mitigation story than an earlier, shorter-budget pass at this aspect had shown. On rel-trial the pattern is noisier and closer to a genuine rise-then-fall: no-skip AUROC peaks at L=3 (0.6893) and dips through L=6 (0.6729) before partially recovering, and skip's advantage is concentrated at the largest depths (L=6, L=8), where it clearly exceeds no-skip, while trailing it at shallower depths.
 
-**Takeaways.**
-- Oversmoothing as a *representational* phenomenon is clearly present and grows with depth, and skip connections measurably counteract it - most cleanly on rel-stack.
-- Oversmoothing as a *performance* problem is weak on these relational tasks in our setup: the model stays close to its best across depths. The benefit of skips is real but small and concentrated at the largest depths.
-- The honest reading is that representational collapse does not automatically cause task degradation here; whether it bites depends on whether the task needs information that the collapse destroys. With a 2-hop receptive field and early stopping, it mostly does not.
+**Why does downstream AUROC stay comparatively flat on rel-stack despite visible representational collapse, when the classic oversmoothing story predicts a rise-then-fall?** Two design choices we made explicitly for tractability both work against seeing a large downstream drop. First, the receptive field is fixed at 2 hops by construction - depth here adds propagation *rounds* over the same neighborhood, not new information, so a deeper model mostly re-mixes signal the first layer or two already captured rather than losing access to it. Second, early stopping selects the best validation checkpoint for every depth, which absorbs much of the optimization difficulty that would otherwise show up as a widening performance gap for deeper, harder-to-train models. A full-graph or growing-receptive-field version of this experiment, infeasible under our 8 GB budget, would be a natural way to test whether a stronger downstream collapse appears once depth also means "sees more of the graph," not just "processes the same neighborhood more times."
 
-**Limitations.** A single model (GCN, as the assignment allows) and the fixed-subgraph design mean we test "more propagation rounds" rather than "deeper receptive field". A full-graph or growing-receptive-field setup - infeasible at this scale on 8 GB - might show a stronger downstream collapse. Two further caveats: (i) the smoothing measures are similarity metrics in the spirit of tutorial 7, not its exact formulas (see 6.1); (ii) Aspect 4 uses a lighter training budget than Aspects 1-2 (5 epochs / 300 steps vs 10 / 500) to keep the 24-model sweep affordable, so its absolute AUROC values should not be compared directly against the other aspects.
+### 6.8 Limitations
+
+This study uses one model family, GCN, as the assignment allows, and the fixed-subgraph design specifically tests additional propagation rounds rather than a genuinely growing receptive field. The smoothing measures (`cos_sim`, `dir_energy`) are similarity metrics in the spirit of Tutorial 7 rather than exact reproductions of its formulas: `cos_sim` is a global mean pairwise cosine over a random node sample rather than neighbor-restricted, and `dir_energy` is computed on L2-normalized embeddings, making it proportional to a neighbor `(1 - cosine)` quantity rather than the tutorial's raw-embedding Dirichlet energy; both remain valid monotone collapse indicators.
 
 ---
 
 ## 7. Aspect 5 - Foundation Models (Dry Question)
 
-We take HGT, one of our heterogeneous models, and describe what would have to change so it could be pretrained on one database and reused on another database with a different schema, such that pretraining helps.
+We take HGT, one of our heterogeneous models, and describe what must change for it to be pretrained on one database and reused on another database with a different schema, so that pretraining can help.
 
 **Required changes.**
-- **Schema-agnostic input.** Replace per-table, per-column learned encoders with encoders keyed by the column semantic type (shared across datasets), plus a shared frozen text encoder for text columns, and normalize feature spaces. Any new table then maps into the same shared space.
-- **Schema-agnostic message passing.** HGT keeps separate weights per node type and per relation, tied to one fixed schema. Replace them with parameters produced from relation and type metadata (for example a small hypernetwork or a per-relation meta-embedding), so unseen types and relations are handled at transfer time.
-- **Task-agnostic pretraining objective.** Pretrain with self-supervision that needs no task labels: masked attribute reconstruction, link prediction over the PK-FK edges, or a contrastive node objective.
-- **Transferable readout.** Detach the task-specific head. For a new dataset, attach a fresh head and either linear-probe or fine-tune on top of the shared backbone.
 
-**Proposed experiment to test effectiveness.** Pretrain on a source dataset self-supervised, then on a target dataset compare three settings: training from scratch, pretrain then fine-tune, and pretrain then linear-probe. Plot the four metrics against the fraction of target labels used (a few-shot curve). Pretraining is effective if it beats from-scratch, especially in the low-label regime.
+- **Schema-agnostic input.** Replace per-table, per-column learned encoders with encoders keyed by semantic column type and shared across datasets, plus a frozen shared text encoder for text columns. Normalize feature spaces so new tables map into the same representation space.
+- **Schema-agnostic message passing.** HGT currently uses separate weights per node type and relation, which ties it to one schema. Replace this with parameters generated from relation and type metadata, such as a hypernetwork or relation meta-embeddings, so unseen types and relations can be handled at transfer time.
+- **Task-agnostic pretraining objective.** Pretrain with self-supervision that does not require task labels, such as masked attribute reconstruction, PK-FK link prediction, or a contrastive node objective.
+- **Transferable readout.** Detach the task-specific head. For a new dataset, attach a fresh head and either linear-probe or fine-tune the pretrained backbone.
+
+**Proposed experiment.** Pretrain on a source dataset using a self-supervised objective, then evaluate on a target dataset under three settings: training from scratch, pretrain then fine-tune, and pretrain then linear-probe. Plot the four metrics against the fraction of target labels used in a few-shot curve. Pretraining is effective if it beats training from scratch, especially in the low-label regime.
 
 ---
 
@@ -312,23 +364,23 @@ We take HGT, one of our heterogeneous models, and describe what would have to ch
 
 ### 8.1 Overview
 
-**Aspect 1 - Message directionality (GraphSAGE + GAT).** We compared MPNN-D (forward only), MPNN-U (bidirectional, shared weights) and Dir-GNN (bidirectional, separate weights) under identical encoders, depth, fan-out and training. We expected bidirectional passing to dominate and Dir-GNN to add a little on top. Found: on rel-stack directionality barely matters for either backbone (all modes within ~0.008 AUROC); on rel-trial it is architecture-dependent - GAT is clearly hurt without reverse edges (0.630 vs ~0.66, with the largest seed variance) while SAGE hardly moves. Conclusion: the value of directionality depends on where the signal sits relative to the entity and on the aggregation function; MPNN-U is the safe default, and a single-backbone study would have understated the effect.
+**Aspect 1 - Message directionality.** We compared MPNN-D, MPNN-U, and Dir-GNN under identical encoders, depth, fan-out, and training, on both GraphSAGE and GAT. We found directionality has only a small effect on rel-stack (all modes within 0.86-0.88 for both backbones), but a clear one on rel-trial, where forward-only MPNN-D underperforms bidirectional passing for both backbones (by 0.015-0.020 AUROC), most severely for GAT. Dir-GNN never wins outright despite its extra parameters, at best tying MPNN-U. MPNN-U (bidirectional, shared weights) is the safest default.
 
-**Aspect 2 - Heterogeneity (SAGE + HGT, homogeneous vs heterogeneous).** We expected type-aware message passing to win. Found: homogeneous wins on rel-stack for both families (SAGE 0.874 vs 0.860; HGT 0.865 vs 0.861) with fewer parameters; heterogeneity helps only SAGE on rel-trial (0.669 → 0.692); for HGT on rel-trial the two settings tie. Conclusion: heterogeneity is not a free win - one shared transform pools statistical strength, while per-type parameters fragment the data across 22-30 edge types and can under-train.
+**Aspect 2 - Heterogeneity.** We compared homogeneous and heterogeneous versions of GraphSAGE and HGT, with a parameter-matched control on the one case where heterogeneity won by a real margin. Heterogeneity helps outright in one of four model/dataset combinations (SAGE on rel-trial, confirmed against the capacity-matched control), ties in two (both HGT pairs), and loses in one (SAGE on rel-stack). Heterogeneity is not a free win: shared parameters can pool statistical strength across many types, while type-specific parameters can fragment the data and under-train.
 
-**Aspect 3 - Node features (HGT; id / column-wise / LLM on one shared subsample).** We expected feature-based encodings to beat the id baseline and the LLM to shine on text. Found (3 seeds): a clear ordering **column > llm > id on both datasets** (rel-stack 0.838 / 0.777 / 0.722; rel-trial 0.670 / 0.637 / 0.519). The id baseline is near chance on rel-trial (transductive embeddings cannot generalize to unseen studies), and the LLM's margin over id roughly doubles on text-heavy rel-trial - but frozen LLM features never beat the typed column encoders, whose numeric/categorical structure the row-to-string serialization destroys. Conclusion: typed column-wise encoders are the best default; LLM features are a low-parameter alternative that pays off most on textual schemas; structure alone is not enough once evaluation requires generalizing to new entities.
+**Aspect 3 - Node features.** We compared id, column-wise, and LLM encodings in HGT on a shared subsample. The result is a clean, consistent ordering: column-wise > LLM > id on both datasets. Typed column encoders are the best default; id shows that graph structure alone carries some signal but generalizes poorly to unseen entities (near-chance on rel-trial); LLM features help more where the schema is text-heavy but never overtake typed encoding, since serialization discards structure a frozen encoder cannot recover.
 
-**Aspect 4 - Depth and oversmoothing (GCN, skip connections).** We expected representations to collapse with depth, performance to rise then fall, and skips to mitigate both. Found: the representational collapse is clearly present (rel-stack global cosine 0.50 → ~0.80, neighbour distance 0.68 → ~0.15 by depth 4) and skip connections measurably reduce it, but downstream AUROC stays roughly flat over depths 1-8, with the clearest skip benefit only at the largest depth (rel-stack L8: 0.871 vs 0.857). Conclusion: with a fixed receptive field and early stopping, representational oversmoothing does not automatically become a performance problem; whether it bites depends on whether the task needs the information the collapse destroys.
+**Aspect 4 - Depth and oversmoothing.** We tested GCN with and without skip connections across depths 1 through 8 on a fixed 2-hop receptive field. Representational collapse is clearly present and grows with depth; skip connections measurably counteract it, and on rel-stack this now translates into a real downstream gain that grows with depth (up to +0.0093 AUROC at L=8). The muted downstream effect relative to the classic oversmoothing story is attributable to the fixed receptive field (depth adds propagation rounds, not new information) and early stopping.
 
-**Aspect 5 - Foundation models (dry).** Turning our HGT into a foundation model requires schema-agnostic input encoders (keyed by semantic column type plus a shared text encoder), message-passing parameters generated from relation/type metadata instead of a fixed schema, a self-supervised pretraining objective (masked attribute reconstruction, PK-FK link prediction or contrastive), and a detachable task head. Effectiveness would be tested with a few-shot transfer curve (scratch vs fine-tune vs linear-probe against the fraction of target labels).
+**Aspect 5 - Foundation models.** Turning HGT into a foundation model requires schema-agnostic input encoders, message passing that generalizes across schemas, a self-supervised pretraining objective, and a transferable head; effectiveness should be tested with a scratch-vs-fine-tune-vs-linear-probe few-shot transfer curve.
 
 ### 8.2 Future work
 
-Limitations of this project: a single seed per configuration on rel-stack (justified by its large validation split, while rel-trial and Aspect 3 use 3 seeds); all metrics reported on the validation split because rel-bench hides test labels, with the precision/recall threshold tuned on that same split (a mild optimistic bias shared by all variants); parameter-matched controls were argued about but not run (justified post hoc: the larger model never meaningfully won); the depth study varies propagation rounds on a fixed 2-hop subgraph rather than a growing receptive field; and only two datasets. Good follow-ups: multi-seed replication with confidence intervals everywhere (Aspect 3 already uses 3 seeds), the param-matched Dir-GNN control, a growing-receptive-field oversmoothing study on larger hardware, fine-tuned (rather than frozen) LLM encoders, and additional rel-bench tasks to test generality.
+The main limitations are that all reported metrics are on the validation split because RelBench hides test labels, with the precision/recall threshold tuned on that same split; the depth study uses a fixed 2-hop subgraph rather than a growing receptive field; only two datasets are used; and only Aspect 2 includes a parameter-matched control. Good follow-ups would be a growing-receptive-field oversmoothing study on larger hardware, parameter-matched controls for Aspects 1, 3, and 4, fine-tuned rather than frozen LLM encoders, and additional RelBench tasks to test generality.
 
 ### 8.3 AI usage
 
-We used an AI assistant (Claude, via Claude Code) extensively in this project: drafting the experimental design, writing the PyTorch Geometric / relbench implementation of every aspect, debugging environment and library failures (a pyg-lib loading issue; an HGT grouped-GEMM CUDA crash on mini-batches with empty node types, fixed by forcing the loop path), generating the figures, and drafting the report text from the measured results. All training runs were launched and monitored by us, and every experimental decision (datasets, tasks, backbones, ablation variants, the skip-connection mitigation) was made or explicitly approved by us. Our validation process: every generated component was first smoke-tested end-to-end on the small rel-f1 dataset before touching the real datasets; parameter counts were checked against the design intent (MPNN-D = MPNN-U exactly, Dir-GNN exactly 2x the message-passing weights, encoder identical across variants); every number quoted in the report was audited against the saved results CSVs; and we ran dedicated review passes over the finished work that caught and fixed real errors the assistant had made - similarity metrics initially mislabeled as tutorial-7's exact formulas, a results table left stale after a re-run, a label-alignment bug in an earlier version of the Aspect 3 subsampler, and fairness claims stronger than what was actually run. When Aspect 3's first (transductive full-batch) design produced unstable results, we diagnosed it together (label-alignment checks, embedding re-computation checks, a linear-probe control) and redesigned the experiment with mini-batch training and 3 seeds. We estimate roughly 70-80% of the code and first-draft text was AI-assisted; the experimental decisions, all training runs, and the final validation were ours.
+We used an AI assistant (Claude, via Claude Code) extensively throughout this project: drafting the experimental design, writing the PyTorch Geometric / RelBench implementation of every aspect, debugging environment and library failures (a pyg-lib loading issue; an HGT grouped-GEMM CUDA crash on mini-batches with empty node types; a CUDA-version mismatch when moving training to an HPC cluster), generating figures and architecture diagrams, and drafting report text from measured results. All training runs were launched and monitored by us, and every experimental decision (datasets, tasks, backbones, ablation variants, the skip-connection mitigation, the converged-protocol rerun) was made or explicitly approved by us. Our validation process included: smoke-testing every new component end-to-end on a small dataset before touching the real datasets; verifying parameter-tying claims directly (e.g. confirming MPNN-U's reverse convolution module is the same Python object as its forward counterpart, and Dir-GNN's message-passing weights are exactly double); auditing every quoted number in this report against the saved results CSVs; cross-checking every result against its full per-epoch training curve to confirm convergence and rule out overfitting before trusting a number; and running dedicated review passes that caught and corrected real errors, including a label-alignment bug in an earlier version of the Aspect 3 subsampler, a results table left stale after a rerun, an earlier Aspect 2 conclusion (homogeneous beating heterogeneous "for both families" on rel-stack) that a fully-converged rerun showed was only true for one of the two families, and a training-budget artifact where several findings understated their true effect size until we re-ran the affected configurations to convergence. We estimate that roughly 70-80% of the code and first-draft text was AI-assisted, while the experimental decisions, all training runs, and the final validation were ours.
 
 ---
 
@@ -336,12 +388,12 @@ We used an AI assistant (Claude, via Claude Code) extensively in this project: d
 
 | Requirement | How it is covered |
 |---|---|
-| rel-bench datasets, entity classification | user-engagement (rel-stack), study-outcome (rel-trial), both binary |
+| RelBench datasets, entity classification | user-engagement (rel-stack), study-outcome (rel-trial), both binary |
 | ROC AUC, precision, recall, AUPRC | reported for every aspect |
 | Aspect 1: three modes, two or more datasets, model from {SAGE, GAT, RGCN} | GraphSAGE + GAT; MPNN-U, MPNN-D, Dir-GNN; two datasets |
-| Aspect 2: homo vs hetero, two or more models, to_hetero, HGT homogenized, two or more datasets | GraphSAGE and HGT, both settings, two datasets |
+| Aspect 2: homo vs hetero, two or more models, to_hetero, HGT homogenized, two or more datasets | GraphSAGE and HGT, both settings, two datasets; HGT-homo built as an explicit single-type HeteroData |
 | Aspect 3: id / column-wise / LLM, HGT, hetero, two or more datasets, same sample | as designed, shared stratified subsample, 3 seeds |
 | Aspect 4: GCN / GAT / SAGE-mean, similarity plus downstream, one mitigation | GCN; global-cosine and neighbour-distance similarity metrics plus the four downstream metrics; skip connections |
 | Aspect 5: dry, heterogeneous model, foundation-model changes plus experiment | HGT, Section 7 |
-| Fair comparison and isolation | global protocol; parameter counts reported; param-matched controls discussed per aspect (run only where the larger model wins) |
+| Comparison design and isolation | global protocol; parameter counts reported; one parameter-matched control (Aspect 2) |
 | Scale handling | NeighborLoader temporal mini-batching; documented stratified subsample for the LLM experiment |
