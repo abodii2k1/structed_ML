@@ -135,3 +135,42 @@ precision, recall, learned params, train time) and
 `artifacts/aspect3_finetune_loss_curves.csv` (per-epoch curves, same format as the
 official aspects) - kept separate from `aspect3_results.csv` since this is a
 supplementary follow-up, not an official strategy.
+
+## Supplementary: RGCN basis-decomposition sweep for Aspect 2 (2 more independent jobs)
+
+Motivated by the edge-count listing: rel-stack's 11 relations are severely imbalanced
+(232x gap between the largest, `votes.PostId->posts`, and the smallest,
+`votes.UserId->users`), while rel-trial's 15 are comparatively balanced (10x
+top-to-bottom, no severe outlier). Tests whether basis decomposition (the original
+R-GCN fix for exactly this failure mode - thin-data relations share a small set of
+basis matrices instead of each estimating a full independent one) helps, and whether
+it helps differently on the two datasets given how differently skewed their edge
+counts are. See the `rgcn-basis-0` markdown cell in `final.ipynb` for the full
+reasoning and the empirical checks behind it (verified `RGCNConv`'s API against the
+installed version, checked relation-ID stability across real batches before relying on
+it, and smoke-tested the whole forward/backward pass on real data before committing to
+the full sweep).
+
+Sweeps `num_bases` in `{1, 2, 4, 8, num_relations}` (22 for rel-stack, 30 for
+rel-trial) x 3 seeds = 15 runs per dataset. Same split-by-dataset pattern as the other
+two supplementary studies:
+
+```bash
+# on your account
+sbatch run_rgcnbasis_relstack.sh
+
+# on your labmate's account
+sbatch run_rgcnbasis_reltrial.sh
+```
+
+Bring the results home the same way:
+
+```bash
+rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_rgcn_basis_results.csv \
+          <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_rgcn_basis_loss_curves.csv \
+          ~/structed_ML/hw3/artifacts/
+```
+
+Output: `artifacts/aspect2_rgcn_basis_results.csv` (one row per num_bases per seed) and
+`artifacts/aspect2_rgcn_basis_loss_curves.csv` (per-epoch curves) - kept separate from
+`aspect2_results.csv` since this is a supplementary follow-up, not an official variant.
