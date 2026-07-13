@@ -136,7 +136,7 @@ precision, recall, learned params, train time) and
 official aspects) - kept separate from `aspect3_results.csv` since this is a
 supplementary follow-up, not an official strategy.
 
-## Supplementary: RGCN basis-decomposition sweep for Aspect 2 (2 more independent jobs)
+## Supplementary: SAGE basis-decomposition sweep for Aspect 2 (2 more independent jobs)
 
 Motivated by the edge-count listing: rel-stack's 11 relations are severely imbalanced
 (232x gap between the largest, `votes.PostId->posts`, and the smallest,
@@ -145,11 +145,22 @@ top-to-bottom, no severe outlier). Tests whether basis decomposition (the origin
 R-GCN fix for exactly this failure mode - thin-data relations share a small set of
 basis matrices instead of each estimating a full independent one) helps, and whether
 it helps differently on the two datasets given how differently skewed their edge
-counts are. See the `rgcn-basis-0` markdown cell in `final.ipynb` for the full
-reasoning and the empirical checks behind it (verified `RGCNConv`'s API against the
-installed version, checked relation-ID stability across real batches before relying on
-it, and smoke-tested the whole forward/backward pass on real data before committing to
-the full sweep).
+counts are.
+
+Deliberately built on **GraphSAGE**, not RGCN: the assignment's Aspect 2 model list is
+GraphSAGE/GAT/HGT (RGCN is only listed under Aspect 1), so this is a hand-built
+`BasisSAGEConv` that reproduces `SAGEConv`'s exact formula
+(`out = lin_l(mean_neighbors) + lin_r(self)`, no bias on the self term) but constructs
+each relation's `lin_l`/`lin_r` weight matrices from a small shared set of basis
+matrices instead of each relation owning fully independent ones - same SAGE
+computation as the official hetero model, only the parameterization of the weights
+changes. `num_bases = num_relations` is designed to reproduce the official hetero
+SAGE result's structure (every relation can still learn its own independent weights,
+just re-expressed through a large-enough basis) as the "no sharing" reference point.
+See the `sage-basis-0` markdown cell in `final.ipynb` for the full reasoning and the
+empirical checks behind it (verified `scatter(..., reduce='mean')` returns zero, not
+NaN, for destination nodes with no contributing edges, and smoke-tested the whole
+forward/backward pass on real data before committing to the full sweep).
 
 Sweeps `num_bases` in `{1, 2, 4, 8, num_relations}` (22 for rel-stack, 30 for
 rel-trial) x 3 seeds = 15 runs per dataset. Same split-by-dataset pattern as the other
@@ -157,20 +168,20 @@ two supplementary studies:
 
 ```bash
 # on your account
-sbatch run_rgcnbasis_relstack.sh
+sbatch run_sagebasis_relstack.sh
 
 # on your labmate's account
-sbatch run_rgcnbasis_reltrial.sh
+sbatch run_sagebasis_reltrial.sh
 ```
 
 Bring the results home the same way:
 
 ```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_rgcn_basis_results.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_rgcn_basis_loss_curves.csv \
+rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_sage_basis_results.csv \
+          <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_sage_basis_loss_curves.csv \
           ~/structed_ML/hw3/artifacts/
 ```
 
-Output: `artifacts/aspect2_rgcn_basis_results.csv` (one row per num_bases per seed) and
-`artifacts/aspect2_rgcn_basis_loss_curves.csv` (per-epoch curves) - kept separate from
+Output: `artifacts/aspect2_sage_basis_results.csv` (one row per num_bases per seed) and
+`artifacts/aspect2_sage_basis_loss_curves.csv` (per-epoch curves) - kept separate from
 `aspect2_results.csv` since this is a supplementary follow-up, not an official variant.
