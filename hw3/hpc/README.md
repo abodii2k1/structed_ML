@@ -162,8 +162,13 @@ empirical checks behind it (verified `scatter(..., reduce='mean')` returns zero,
 NaN, for destination nodes with no contributing edges, and smoke-tested the whole
 forward/backward pass on real data before committing to the full sweep).
 
-Sweeps `num_bases` in `{1, 2, 4, 8, num_relations}` (22 for rel-stack, 30 for
-rel-trial) x 3 seeds = 15 runs per dataset. Same split-by-dataset pattern as the other
+Sweeps `num_bases` in `{1, 2, 4, 8, 12, 16, 20, 22}` for rel-stack and
+`{1, 2, 4, 8, 12, 16, 20, 24, 28, 30}` for rel-trial x 3 seeds (24-30 runs per dataset)
+- denser near the top end than a naive log-spaced sweep, since the gap between 8 and the
+full relation count is where the full-vs-shared transition actually happens and was
+originally the least-resolved part of the curve. `run_sage_basis()` is resumable, so
+rel-trial's already-collected `{1,2,4,8,30}` points are skipped, not recomputed. Same
+split-by-dataset pattern as the other
 two supplementary studies:
 
 ```bash
@@ -185,3 +190,43 @@ rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_sage_basis_results
 Output: `artifacts/aspect2_sage_basis_results.csv` (one row per num_bases per seed) and
 `artifacts/aspect2_sage_basis_loss_curves.csv` (per-epoch curves) - kept separate from
 `aspect2_results.csv` since this is a supplementary follow-up, not an official variant.
+
+## Supplementary: partial LLM fine-tune + more data for Aspect 3 (2 more independent jobs)
+
+Follow-up to the full-finetune `llm-finetuned` result, which underperformed the frozen
+`llm` strategy on rel-trial (0.6388 vs 0.6545) - likely overfitting, since the official
+shared A3 sample is only 6,000 training seeds (~12 batches/epoch, never hitting the
+500-step cap), so a 30-epoch budget means the 22.7M-parameter fully-unfrozen MiniLM saw
+the same ~12 batches up to 30 times. Tests two changes at once: (1) freeze all but the
+last 1 or 2 MiniLM transformer layers instead of the whole model (verified directly:
+frozen params never get gradient, unfrozen ones always do, zero leakage - `k=1` leaves
+1.77M trainable params, `k=2` leaves 3.55M, both far below the full fine-tune's 22.7M),
+(2) train on a dedicated, separately-cached 30,000/10,000-seed sample instead of the
+official 6,000/2,000 one (does not touch or replace the official A3 subsample - those
+strategies need to stay on the identical fixed sample per the assignment's requirement).
+See the `a3-partial-0` markdown cell in `final.ipynb` for the full reasoning.
+
+Same split-by-dataset pattern as the other supplementary studies:
+
+```bash
+# on your account
+sbatch run_partialfinetune_relstack.sh
+
+# on your labmate's account
+sbatch run_partialfinetune_reltrial.sh
+```
+
+Heavier than the full fine-tune: 5x more training data per epoch, so expect this to
+take noticeably longer per run despite fewer trainable parameters.
+
+Bring the results home the same way:
+
+```bash
+rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_results.csv \
+          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_loss_curves.csv \
+          ~/structed_ML/hw3/artifacts/
+```
+
+Output: `artifacts/aspect3_partial_finetune_results.csv` (one row per num_unfrozen per
+seed) and `artifacts/aspect3_partial_finetune_loss_curves.csv` (per-epoch curves) -
+kept separate from both `aspect3_results.csv` and `aspect3_finetune_results.csv`.
