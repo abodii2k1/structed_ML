@@ -255,6 +255,37 @@ All 27 runs (4 official variants + the 3-seed homo-wide control, x 2 datasets mi
 
 **Takeaway.** Heterogeneity is not a free win: it must be tested per model family and per dataset, and on these tasks it earns its extra parameters in only one of four combinations.
 
+### 4.8 Supplementary: Testing the Fragmentation Hypothesis via Basis Decomposition
+
+This subsection reports a follow-up investigation beyond the assignment's Aspect 2 requirement (the assignment's model list for this aspect is GraphSAGE/GAT/HGT); it does not replace or count toward the official comparison above, which already fully satisfies the requirement on its own.
+
+**Question.** rel-stack's 11 relations are severely imbalanced in edge count - `votes.UserId->users` has 5,182 edges versus `votes.PostId->posts`'s 1,199,831, a 232x gap - while rel-trial's 15 relations are comparatively balanced (about 10x top-to-bottom, no severe outlier). Does homogeneous SAGE beat heterogeneous SAGE on rel-stack because some relations' independent weight matrices are estimated from too little data, and does sharing weight structure across relations fix that?
+
+**Method.** Since PyG's native basis-decomposition mechanism (the standard R-GCN fix for exactly this failure mode: each relation's weight matrix becomes a learned combination of a small shared set of `B` basis matrices, rather than a fully independent matrix) ships only on `RGCNConv`, we built a hand-written `BasisSAGEConv` that reproduces `SAGEConv`'s own formula (`out = lin_l(mean_neighbors) + lin_r(self)`, confirmed against PyG's source) with each relation's `lin_l`/`lin_r` constructed as `W = sum_b coef[rel,b] * basis[b]` instead of being independently owned. Relations targeting the same destination type are summed, matching the official `HeteroConv(..., aggr="sum")` exactly, so `num_bases = num_relations` (22 for rel-stack, 30 for rel-trial) serves as the "no sharing" reference point within this same SAGE family. Same 30-epoch/patience-6/3-seed protocol as everywhere else in this report. Swept `num_bases` over `{1, 2, 4, 8, 12, 16, 20, num_relations}`.
+
+**Results.**
+
+| num_bases | rel-stack AUROC | rel-trial AUROC |
+|---|---|---|
+| 1 | 0.8752 ± .0026 | 0.6826 ± .0063 |
+| 2 | **0.8780 ± .0025** | 0.6773 ± .0100 |
+| 4 | 0.8772 ± .0015 | 0.6868 ± .0047 |
+| 8 | 0.8755 ± .0020 | 0.6828 ± .0032 |
+| 12 | 0.8774 ± .0039 | 0.6880 ± .0051 |
+| 16 | 0.8775 ± .0023 | **0.6912 ± .0061** |
+| 20 | 0.8752 ± .0017 | 0.6854 ± .0051 |
+| 24 | - | 0.6866 ± .0045 |
+| 28 | - | 0.6844 ± .0080 |
+| 22 / 30 (full, no sharing) | 0.8729 ± .0017 | 0.6868 ± .0050 |
+
+**Convergence.** 51 of 54 (num_bases, seed) runs converged before the epoch cap (21/24 rel-stack, 30/30 rel-trial); the 3 exceptions (rel-stack `num_bases=1` seeds 42 and 43, `num_bases=4` seed 43) were still improving slightly at epoch 30, a minor caveat given rel-stack's own spread across basis counts is only about 0.005. Eval-time neighbor-sampling noise (Section 2) measured at mean |diff| = 0.00003, max = 0.0002 across all 54 runs - consistent with the rest of this report.
+
+**On rel-stack, there is a real sweet spot.** AUROC rises from `num_bases=1` (0.8752) to a plateau around `num_bases=2-16` (0.877-0.878), then drops at `num_bases=22` (0.8729) - the full-independence, no-sharing endpoint is the *worst* point in the entire sweep, below even the official hetero result (0.8746). The best point (`num_bases=2`, 0.8780) closes about 63% of the gap between official hetero (0.8746) and homo (0.8800). This is real, verified evidence that fragmenting parameters across rel-stack's severely imbalanced relations costs real performance, and that moderate sharing recovers a substantial part of it. It does not, however, fully close the gap to homo - the best basis-decomposition point still falls about 0.002 short of homo's 0.8800, so parameter fragmentation is a real, substantial, but incomplete explanation for why homogeneous wins on rel-stack.
+
+**On rel-trial, basis count barely matters.** All ten points sit in a 0.677-0.691 band, mostly within each point's own seed-to-seed noise - consistent with rel-trial's relations not having a severely under-trained outlier for sharing to rescue. `num_bases=30` (0.6868) lands almost exactly on the official hetero result (0.6867), a clean sanity check that `BasisSAGEConv` correctly reproduces independent per-relation weights when given enough bases. rel-stack's equivalent check is looser (0.8729 vs. official hetero's 0.8746) - plausibly optimization variance, since a basis-decomposed layer at `num_bases = num_relations` has strictly more raw parameters than a plain independent `SAGEConv` per relation (the combination-coefficient matrix is extra), not a smaller or differently-shaped model.
+
+We do not identify a specific mechanism for the remaining ~37% of the gap on rel-stack in this report; testing one (for example, whether the per-relation-mean-then-sum pooling that both hetero and this basis-decomposed variant share, as opposed to homo's single pooled mean over all neighbors regardless of type, is itself part of the answer) is left to future work.
+
 ---
 
 ## 5. Aspect 3 - Node Features

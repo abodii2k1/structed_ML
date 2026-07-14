@@ -64,39 +64,6 @@ budget-sensitivity comparison in the report.)
 - `artifacts/loss_curves_A{1,2,3,4}.csv` - per-epoch train loss / val loss / val AUROC
 - `logs/aspect_*.out` - live training prints per job
 
-## Supplementary: edge-type ablation (2 independent jobs, split across accounts)
-
-Motivated by Aspect 2's rel-stack finding: trains hetero-SAGE (3 seeds) then masks
-each relation's edges one at a time at evaluation time (no retraining) to measure its
-actual contribution to validation AUROC. See the `edge-ablation-0` markdown cell in
-`final.ipynb` for the full reasoning.
-
-Split into two **standalone** jobs (no shared dependency, no `submit_all.sh`) so two
-people on two different HPC accounts can each run one:
-
-```bash
-# on your account
-sbatch run_ablation_relstack.sh
-
-# on your labmate's account
-sbatch run_ablation_reltrial.sh
-```
-
-Each script builds its own graph cache on first run if one isn't already present, so
-either can run standalone on a fresh account after `setup_env.sh`. Resumable like
-everything else - a rerun skips any (relation, seed) already in the output CSV.
-
-Bring the results home the same way as step 4 above:
-
-```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/edge_ablation_*.csv \
-          ~/structed_ML/hw3/artifacts/
-```
-
-Output: `artifacts/edge_ablation_{rel-stack,rel-trial}.csv` - one row per relation per
-seed (AUROC with that relation masked, and its drop from the unmasked baseline), plus
-a `__baseline__` row per seed.
-
 ## Supplementary: fine-tuned LLM encoding for Aspect 3 (2 more independent jobs)
 
 Tests whether Aspect 3's `llm` strategy loses to `column` because serializing a row to
@@ -107,8 +74,8 @@ strategy's frozen precomputed embedding. See the `a3-finetune-0` markdown cell i
 (PyG can't slice raw text lists, so text is pre-tokenized into fixed-length tensors
 instead; discriminative LR so fine-tuning doesn't wreck the pretrained weights).
 
-Same split-by-dataset pattern as the edge ablation above - two standalone jobs, no
-shared dependency:
+Split by dataset into two standalone jobs, no shared dependency, so two people on two
+different HPC accounts can each run one:
 
 ```bash
 # on your account
