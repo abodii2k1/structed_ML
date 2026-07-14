@@ -13,9 +13,14 @@ freezing mechanism directly: frozen params never get gradient, unfrozen ones alw
 do, zero leakage either direction).
 
 Usage:
-    python hpc_partial_finetune.py rel-stack
+    python hpc_partial_finetune.py rel-stack           # both num_unfrozen configs (1 and 2)
     python hpc_partial_finetune.py rel-trial
-    python hpc_partial_finetune.py rel-stack --dry   # just list which cells would run
+    python hpc_partial_finetune.py rel-stack --k 1      # only num_unfrozen=1 (~21h alone,
+    python hpc_partial_finetune.py rel-stack --k 2      # vs ~42h for both) - splits one
+                                                         # dataset's work across two HPC
+                                                         # accounts alongside the by-dataset
+                                                         # split (run_partialfinetune_*.sh)
+    python hpc_partial_finetune.py rel-stack --dry      # just list which cells would run
 
 Set STRUCTML_ARTIFACTS to redirect outputs (defaults to the repo's hw3/artifacts).
 Resumable: results are saved after every (num_unfrozen, seed); rerunning skips
@@ -36,6 +41,11 @@ dry = "--dry" in sys.argv
 assert dataset in ("rel-stack", "rel-trial"), \
     f"usage: python hpc_partial_finetune.py <rel-stack|rel-trial>, got {dataset!r}"
 os.environ["A3_PARTIAL_DATASET"] = dataset
+
+if "--k" in sys.argv:
+    k = sys.argv[sys.argv.index("--k") + 1]
+    assert k in ("1", "2"), f"--k must be 1 or 2, got {k!r}"
+    os.environ["A3_PARTIAL_UNFROZEN"] = k
 
 CELLS = ["aspect1-1", "aspect1-3", "aspect3-1", "a3-finetune-1", "a3-partial-1", "a3-partial-2"]
 
