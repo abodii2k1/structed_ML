@@ -1,0 +1,57 @@
+================================================
+STRUCTML SAGE BASIS SWEEP: rel-stack
+================================================
+Job ID: 368586
+Node: lambda1
+Starting at: Mon Jul 13 10:57:09 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_sage_basis: rel-stack | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell sage-basis-1 =====
+
+===== exec cell sage-basis-2 =====
+
+##### sage-basis sweep: rel-stack #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 16.78 seconds.
+rel-stack: 22 relations | basis sweep: [1, 2, 4, 8, 12, 16, 20, 22]
+  bases=1 seed=42: cached, skipping
+  bases=1 seed=43: cached, skipping
+  bases=1 seed=44: cached, skipping
+  bases=2 seed=42: cached, skipping
+  bases=2 seed=43: cached, skipping
+  bases=2 seed=44: cached, skipping
+  bases=4 seed=42: cached, skipping
+  bases=4 seed=43: cached, skipping
+  bases=4 seed=44: cached, skipping
+  bases=8 seed=42: cached, skipping
+  bases=8 seed=43: cached, skipping
+  bases=8 seed=44: cached, skipping
+  bases=12 seed=42: AUROC 0.8729 | params 3,103,393 | 1605s
+  bases=12 seed=43: AUROC 0.8796 | params 3,103,393 | 2823s
+  bases=12 seed=44: AUROC 0.8796 | params 3,103,393 | 2859s
+  bases=16 seed=42: AUROC 0.8764 | params 3,365,889 | 2470s
+  bases=16 seed=43: AUROC 0.8802 | params 3,365,889 | 2838s
+  bases=16 seed=44: AUROC 0.8759 | params 3,365,889 | 2062s
+  bases=20 seed=42: AUROC 0.8733 | params 3,628,385 | 2144s
+  bases=20 seed=43: AUROC 0.8758 | params 3,628,385 | 2397s
+  bases=20 seed=44: AUROC 0.8765 | params 3,628,385 | 1661s
+  bases=22 seed=42: cached, skipping
+  bases=22 seed=43: cached, skipping
+  bases=22 seed=44: cached, skipping
+
+### DONE: sage-basis sweep for rel-stack
+
+================================================
+SAGE BASIS SWEEP rel-stack COMPLETE - exit code 0
+Finished at: Tue Jul 14 04:49:23 AM IDT 2026
+================================================

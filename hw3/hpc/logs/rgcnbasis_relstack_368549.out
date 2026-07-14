@@ -1,0 +1,21 @@
+================================================
+STRUCTML RGCN BASIS SWEEP: rel-stack
+================================================
+Job ID: 368549
+Node: lambda1
+Starting at: Mon Jul 13 12:25:08 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_rgcn_basis: rel-stack | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell rgcn-basis-1 =====
+
+===== exec cell rgcn-basis-2 =====

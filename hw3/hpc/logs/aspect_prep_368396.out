@@ -1,0 +1,60 @@
+================================================
+STRUCTML ASPECT RUN: prep
+================================================
+Job ID: 368396
+Node: lambda1
+Starting at: Thu Jul  9 08:31:37 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: prep | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cpu | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+### prep: graph cache for rel-stack
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 13.30 seconds.
+
+### prep: graph cache for rel-trial
+Loading Database object from /home/badran.abed/.cache/relbench/rel-trial/db...
+Done in 9.85 seconds.
+
+### prep: aspect-3 subgraph for rel-stack
+  [rel-stack] train n=6000 pos-rate=0.0500 | val n=2000 pos-rate=0.0280
+    embedded postLinks: 5667 rows
+    embedded postHistory: 58271 rows
+    embedded posts: 31961 rows
+    embedded users: 8000 rows
+    embedded comments: 33047 rows
+    embedded votes: 30413 rows
+    embedded badges: 22216 rows
+
+### prep: aspect-3 subgraph for rel-trial
+  [rel-trial] train n=6000 pos-rate=0.6375 | val n=960 pos-rate=0.5844
+    embedded sponsors: 10565 rows
+    embedded facilities_studies: 23962 rows
+    embedded studies: 6960 rows
+    embedded interventions_studies: 7884 rows
+    embedded designs: 6959 rows
+    embedded interventions: 7884 rows
+    embedded eligibilities: 6960 rows
+    embedded conditions_studies: 12884 rows
+    embedded facilities: 16763 rows
+    embedded sponsors_studies: 10565 rows
+    embedded conditions: 12884 rows
+
+### DONE: prep
+
+================================================
+ASPECT prep COMPLETE - exit code 0
+Finished at: Fri Jul 10 01:30:45 AM IDT 2026
+================================================

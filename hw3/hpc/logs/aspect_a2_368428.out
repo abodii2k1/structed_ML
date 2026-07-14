@@ -1,0 +1,23 @@
+================================================
+STRUCTML ASPECT RUN: a2
+================================================
+Job ID: 368428
+Node: lambda1
+Starting at: Fri Jul 10 11:33:24 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a2 | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cpu | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect2-1 =====
+
+===== exec cell aspect2-2 =====
