@@ -1,0 +1,43 @@
+================================================
+STRUCTML LLM FINE-TUNE: rel-trial
+================================================
+Job ID: 368516
+Node: lambda1
+Starting at: Sun Jul 12 07:57:29 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_finetune_llm: rel-trial | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell a3-finetune-1 =====
+
+===== exec cell a3-finetune-2 =====
+
+##### llm-finetuned: rel-trial #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 19.03 seconds.
+    tokenized designs: 6959 rows
+    tokenized conditions: 12884 rows
+    tokenized facilities_studies: 23962 rows
+    tokenized studies: 6960 rows
+    tokenized interventions_studies: 7884 rows
+    tokenized sponsors: 10565 rows
+    tokenized eligibilities: 6960 rows
+    tokenized conditions_studies: 12884 rows
+    tokenized interventions: 7884 rows
+    tokenized sponsors_studies: 10565 rows
+    tokenized facilities: 16762 rows
+
+================================================
+LLM FINE-TUNE rel-trial COMPLETE - exit code 1
+Finished at: Sun Jul 12 08:02:16 PM IDT 2026
+================================================

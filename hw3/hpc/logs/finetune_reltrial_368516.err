@@ -1,0 +1,96 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3641.32it/s]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 5090.95it/s]
+a3-finetune-1:47: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  
+Traceback (most recent call last):
+  File "/home/zina.assi/struct/structed_ML/hw3/hpc/hpc_finetune_llm.py", line 52, in <module>
+    exec(compile(src[cid], cid, "exec"), g)
+  File "a3-finetune-2", line 8, in <module>
+  File "a3-finetune-1", line 131, in run_a3_finetune
+  File "a3-finetune-1", line 88, in train_a3_finetune
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "a3-finetune-1", line 60, in forward
+  File "a3-finetune-1", line 60, in <dictcomp>
+  File "a3-finetune-1", line 57, in embed
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/sentence_transformers/base/model.py", line 511, in forward
+    input = module(input, **module_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/sentence_transformers/base/modules/transformer.py", line 1096, in forward
+    model_output = model_method(**filtered_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/utils/generic.py", line 1040, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/utils/output_capturing.py", line 252, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 673, in forward
+    encoder_outputs = self.encoder(
+                      ^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 440, in forward
+    hidden_states = layer_module(
+                    ^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/modeling_layers.py", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 387, in forward
+    self_attention_output, _ = self.attention(
+                               ^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 318, in forward
+    attention_output, attn_weights = self.self(
+                                     ^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 180, in forward
+    key_layer = self.key(hidden_states).view(*hidden_shape).transpose(1, 2)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/linear.py", line 125, in forward
+    return F.linear(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 192.00 MiB. GPU 0 has a total capacity of 10.75 GiB of which 67.62 MiB is free. Including non-PyTorch memory, this process has 10.68 GiB memory in use. Of the allocated memory 10.48 GiB is allocated by PyTorch, and 17.61 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
