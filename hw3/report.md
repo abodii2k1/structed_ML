@@ -70,13 +70,28 @@ On the relational PK-FK graph, how much does the direction of message passing ma
 ### 3.2 Model Architecture
 
 ![Aspect 1 architecture](artifacts/architecture_A1.png)
-*Figure 1: shared pipeline for all six variants (2 backbones x 3 directionality modes), and how each mode wires the forward (`f2p_*`) and reverse (`rev_f2p_*`) edges.*
+*Figure 1: shared pipeline for all six variants (2 backbones x 3 directionality modes). Raw tables are the inputs, boxes are components, the data flowing between them is written on the arrows, and every numbered step is explained in the walkthrough table below; the bottom panels show how each mode wires the forward (`f2p_*`) and reverse (`rev_f2p_*`) edges.*
 
 Every variant shares the same skeleton: a per-table `HeteroEncoder` maps each row's typed columns to a 128-dimensional vector; two message-passing layers (`SAGEConv` or `GATConv`, `heads=4` for GAT, head outputs averaged not concatenated) update node embeddings; a two-layer MLP head (`Linear(128,128) -> ReLU -> Linear(128,1)`) reads out the entity node's embedding into one logit. Only the wiring inside each `HeteroConv` layer changes between the three modes:
 
 - **MPNN-D (directed):** only the forward edge types (`f2p_*`) get a convolution; information flows one way, from foreign-key row toward primary-key row.
 - **MPNN-U (undirected):** forward and reverse edge types both get a convolution, but each reverse edge type's convolution module is literally the same object as its forward counterpart (`rel2conv[e[1]] = conv; convs[rev_e] = rel2conv[...]` in code), so the two directions share one learned transform.
 - **Dir-GNN:** forward and reverse edge types each get their *own*, independently initialized convolution module, so the two directions never share weights.
+
+**Step-by-step walkthrough (numbers match Figure 1):**
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 1 | Raw RDB | the database's tables | nothing yet - every table row is about to become one graph node, and every PK-FK link one edge | tables with typed columns |
+| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row (node type = table name); each PK-FK link becomes a forward edge `f2p_<key>` (child row -> parent row) plus a reverse edge `rev_f2p_<key>`; each row's timestamp is stored on its node | the full heterogeneous graph (`HeteroData`) |
+| 3 | Sample subgraph (`NeighborLoader`) | full graph + a mini-batch of 512 labeled seed users | for each seed, sample at most 128 neighbors per edge type per hop, going out 2 hops, keeping only neighbors whose timestamp is <= the seed's prediction time (so no information from the future leaks in) | mini-batch subgraph: the seed rows + their sampled neighbors + the edges between them |
+| 4 | HeteroEncoder | the typed columns of every node in the batch | per node type, each column is encoded by an encoder matched to its type (numeric -> normalized embedding; categorical -> learned embedding; text -> GloVe 300-d averaged and projected to 128-d), then the per-column embeddings are fused into one vector per row | `x_v` in R^128 for every batch node |
+| 5 | Message-passing layer 1 | all `x_v` + the edge types the mode wires in | for every wired edge type, each destination node aggregates its sampled neighbors (SAGEConv: unweighted mean plus a separate self-transform; GATConv: 4-head attention over neighbors, heads averaged), producing one message per edge type; the messages landing on the same node are **summed** across edge types, then passed through ReLU. A node type that receives no messages keeps its previous vector | `h_v^(1)` in R^128 per node |
+| 6 | Message-passing layer 2 | `h_v^(1)` + the same wired edges | identical structure to layer 1 with its own fresh weights | `h_v^(2)` per node |
+| 7 | Take seed rows | `h_v^(2)` of the entity (users) node type | the batch's labeled seeds are, by construction, the first 512 rows of the entity type's tensor; keep exactly those rows | `h_seed` in R^128, one per seed |
+| 8 | MLP head | `h_seed` | `Linear(128,128) -> ReLU -> Linear(128,1)` | one logit per seed; training minimizes `BCEWithLogitsLoss` (with a positive-class weight), evaluation applies a sigmoid to get the predicted probability |
+
+The **only** thing that differs between the six variants is step 5/6: which edge types are wired in and whether the two directions share weights (bottom of Figure 1), and whether the per-edge-type convolution is SAGEConv or GATConv.
 
 ### 3.3 Comparison Design
 
@@ -143,7 +158,7 @@ Does treating the graph as heterogeneous, with typed nodes and edges, outperform
 ### 4.2 Model Architecture
 
 ![Aspect 2 architecture](artifacts/architecture_A2.png)
-*Figure 4: heterogeneous vs. homogeneous pipelines, and the `collapse()` step that converts a typed graph into an untyped one.*
+*Figure 4: heterogeneous vs. homogeneous pipelines. Steps 1-4 (raw tables through the shared `HeteroEncoder`) and 9-10 (shared MLP head and output) are identical for all four variants; the two branches differ only in what happens between them. Every numbered step is explained in the walkthrough tables below.*
 
 All four variants share the same per-table `HeteroEncoder`. The heterogeneous variants then run a `HeteroConv` (one `SAGEConv`, or native `HGTConv` with `heads=4`, applied per edge type) so type information is preserved through message passing. The homogeneous variants instead call `collapse()` before message passing, which does the following (this is the concrete answer to "how did you convert heterogeneous into homogeneous," per the TA's note):
 
@@ -153,6 +168,41 @@ All four variants share the same per-table `HeteroEncoder`. The heterogeneous va
 4. Slice the entity type's rows back out of the merged output using its stored offset, for the prediction head.
 
 For **HGT-homo** specifically, the assignment requires literally disabling heterogeneity at the data level, not just algorithmically: we wrap the merged graph in an explicit single-type `HeteroData()` (`hom["node"].x = x_all`, `hom["node","to","node"].edge_index = ei_all`) before calling the same `HGTConv`, so its own type-lookup machinery sees exactly one node type and one edge type, matching the spec's construction exactly rather than only being computationally equivalent to it.
+
+**Step-by-step walkthrough (numbers match Figure 4).** Shared steps, identical for all four variants:
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 1 | Raw RDB | the database's tables | every table row is about to become one graph node, every PK-FK link one edge | tables with typed columns |
+| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row (node type = table name); each PK-FK link becomes a forward edge `f2p_<key>` plus a reverse edge `rev_f2p_<key>`; row timestamps attached | the full heterogeneous graph (`HeteroData`) |
+| 3 | Sample subgraph (`NeighborLoader`) | full graph + a mini-batch of 512 labeled seed entities | sample at most 128 neighbors per edge type per hop, 2 hops, only neighbors with timestamp <= the seed's prediction time | mini-batch subgraph |
+| 4 | HeteroEncoder | the typed columns of every batch node | per node type, per-column typed encoders (numeric / categorical / GloVe text) fused into one vector per row; **each table enters separately** and keeps its own encoder weights | `x_v` in R^128 per node, still typed: one matrix `X_type` per node type |
+
+Heterogeneous branch - types are kept all the way through message passing:
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 5a | HeteroConv layer 1 | the per-type matrices `X_type` + the typed edge lists (one per relation) | every edge type gets its own convolution with its own weights: one `SAGEConv` per edge type (mean over that relation's sampled neighbors) for the SAGE family, or a native `HGTConv` (4-head attention with per-node-type and per-relation projections) for the HGT family; the per-edge-type messages arriving at the same node are summed; ReLU | `h_v^(1)` per node, still one matrix per node type |
+| 6a | HeteroConv layer 2 | `h_v^(1)` + the same typed edges | identical structure, fresh weights | `h_v^(2)` per node type |
+| 7a | Take entity rows | the `h_v^(2)` dictionary | keep only the entity type's (users') matrix; its first 512 rows are this batch's seed entities | `h_seed` in R^128 |
+
+Homogeneous branch - types are erased before message passing:
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 5b | `collapse()` | the same per-type matrices `X_type` + typed edge lists | concatenate all `X_type` into one big matrix `x_all` in a fixed node-type order, recording each type's starting row (its *offset*); for every edge type `(s, rel, d)`, add `offset[s]` to its source indices and `offset[d]` to its target indices, then concatenate all edge lists into one `edge_index_all`. After this, no type information remains | `(x_all, edge_index_all)`: one untyped node set + one untyped edge set |
+| 6b | single Conv layer 1 | the merged graph | **one** type-agnostic convolution applied to all nodes at once - a plain `SAGEConv` (SAGE family) or the same `HGTConv` on the single-type wrapper described above (HGT family); every node aggregates *all* its neighbors with the *same* weights, regardless of what table they came from; ReLU | `h_all^(1)` |
+| 7b | single Conv layer 2 | `h_all^(1)` | identical structure, fresh weights | `h_all^(2)` |
+| 8b | Slice by offset | `h_all^(2)` + the offsets stored in step 5b | the entity type's embeddings are rows `[offset[entity] : offset[entity] + N_entity]` of `h_all^(2)`; cut them back out; the first 512 are the seeds | `h_seed` in R^128 |
+
+Shared again - both branches end identically:
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 9 | MLP head (same architecture for every variant) | `h_seed` | `Linear(128,128) -> ReLU -> Linear(128,1)` | one logit per seed |
+| 10 | Output | the logits | training minimizes `BCEWithLogitsLoss` (positive-class weight); evaluation applies a sigmoid to get probabilities | predicted probability per seed entity |
+
+So the comparison isolates exactly one question: given identical inputs `X_type` (step 4) and an identical head (step 9), does message passing do better when every relation keeps its own weights (5a-7a) or when one shared set of weights treats the merged graph as a single homogeneous network (5b-8b)?
 
 ### 4.3 Comparison Design
 
@@ -216,13 +266,30 @@ In the heterogeneous setting, how does the initial node representation affect do
 ### 5.2 Model Architecture
 
 ![Aspect 3 architecture](artifacts/architecture_A3.png)
-*Figure 7: three swappable input encoders feeding an identical HGT backbone and head.*
+*Figure 7: three swappable input encoders feeding an identical HGT backbone and head. Each encoder consumes a different view of the same row (its index only, its typed cell values, or its serialization to text); all three emit the same 128-d node vector. Every numbered step is explained in the walkthrough table below.*
 
 All three variants share the exact same downstream model: two `HGTConv` layers (`heads=4`) followed by the same two-layer MLP head. Only the block that produces each node's initial 128-dimensional vector changes:
 
 - **id:** `nn.Embedding(num_nodes_of_type, 128)` per node type, looked up by the node's position in the cached subgraph - a pure lookup table, ignoring all cell values, and transductive by construction (a validation entity's own embedding is only trained if it happens to appear as a neighbor of some training entity's sampled neighborhood).
 - **column:** the shared `HeteroEncoder` used everywhere else in this project (torch_frame typed-column encoders).
 - **llm:** each row is serialized to a string (`"col1=v1, col2=v2, ..."`), embedded once with frozen sentence-transformers MiniLM (`all-MiniLM-L6-v2`, 384-d), and a learned per-type `Linear(384, 128)` projects it down; MiniLM itself is never fine-tuned.
+
+**Step-by-step walkthrough (numbers match Figure 7; exactly one of 4a/4b/4c is active per run):**
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 1 | Raw RDB | the database's tables | every table row is about to become one graph node | tables with typed columns |
+| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row; each PK-FK link becomes a forward `f2p_*` and reverse `rev_f2p_*` edge; timestamps attached | the full heterogeneous graph |
+| 3 | Fixed cached subsample | full graph + the task's labeled entities | a label-stratified sample of seed studies (6000 train / 2000 validation, preserving each split's positive rate) is drawn **once**; their 2-hop time-respecting neighborhoods are sampled with fan-out [6,6]; the resulting subgraph is cached to disk and reused identically by all three strategies and all seeds | one fixed subgraph with seed labels attached |
+| 4a | id encoder | each node's **index only** | `nn.Embedding(N_type, 128)` per node type: a pure lookup table returning the node's own learned slot; every cell value is ignored; transductive (a slot is only trained if that node appears in some training computation) | `x_v` in R^128 |
+| 4b | column encoder | each node's **typed cell values** | the same `HeteroEncoder` as every other aspect: per-column typed encoders (torch_frame) fused into one vector per row | `x_v` in R^128 |
+| 4c | llm encoder | each row **serialized to text** (`"NctId=NCT01, Phase=2, ..."`) | the string is embedded once by frozen MiniLM (384-d, precomputed for every subgraph node when the cache is built); a learned per-type `Linear(384,128)` projects it down - the only trained part | `x_v` in R^128 |
+| 5 | HGTConv layer 1 | all `x_v` + the typed edges | 4-head attention where the query/key/value projections depend on the node types and the attention/message matrices on the relation; messages arriving at a node are summed; ReLU | `h_v^(1)` per node |
+| 6 | HGTConv layer 2 | `h_v^(1)` | identical structure, fresh weights | `h_v^(2)` per node |
+| 7 | Take seed rows | `h_v^(2)` of the studies type | keep the 6000 / 2000 seed studies' embeddings | `h_seed` |
+| 8 | MLP head | `h_seed` | `Linear(128,128) -> ReLU -> Linear(128,1)`; `BCEWithLogitsLoss` in training, sigmoid at evaluation | one logit / probability per seed |
+
+Steps 5-8 are bit-for-bit identical across the three strategies; only the step-4 block changes, so any performance difference is attributable to the initial node representation alone.
 
 ### 5.3 Comparison Design
 
@@ -280,9 +347,24 @@ As we add layers, do node representations collapse toward each other (oversmooth
 ### 6.2 Model Architecture
 
 ![Aspect 4 architecture](artifacts/architecture_A4.png)
-*Figure 9: the depth-configurable GCN stack, with the optional skip connection shown looping around each layer.*
+*Figure 9: the depth-configurable GCN stack. The arrows carry the data at each step (`h^(0)` after `collapse()`, `h^(l)` between repeated layers, `h^(L)` into the head); the optional skip connection is shown looping the layer input around each `GCNConv`. Every numbered step is explained in the walkthrough table below.*
 
 A homogeneous operator (GCN was chosen because oversmoothing was first characterized in this model family): the same per-table `HeteroEncoder` as every other aspect, followed by Aspect 2's `collapse()` to merge the typed graph into one node/edge set, then `L` stacked `GCNConv` layers (`L` in `{1,2,3,4,6,8}`), then the same MLP head. Each layer computes `h = relu(conv(h_prev))` in the baseline, or `h = relu(h_prev + conv(h_prev))` in the skip variant - a residual connection carrying the previous layer's representation forward.
+
+**Step-by-step walkthrough (numbers match Figure 9):**
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 1 | Raw RDB | the database's tables | every table row is about to become one graph node | tables with typed columns |
+| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row; each PK-FK link becomes a forward `f2p_*` and reverse `rev_f2p_*` edge; timestamps attached | the full heterogeneous graph |
+| 3 | Sample subgraph (`NeighborLoader`) | full graph + a mini-batch of 256 seed entities | at most 10 neighbors per edge type per hop, 2 hops, time-respecting - and **fixed**: the same 2-hop subgraph is handed to every depth setting, so `L` never changes what the model can see | mini-batch subgraph, identical across all depths |
+| 4 | HeteroEncoder | the typed columns of every batch node | per-column typed encoders fused into one vector per row | `x_v` in R^128 per node, per node type |
+| 5 | `collapse()` | per-type matrices + typed edges | same operation as Aspect 2 step 5b: concatenate per-type matrices into `x_all` (recording offsets), shift and merge all edge indices into one edge set | `h^(0) = x_all` + one merged `edge_index` |
+| 6 | GCN stack, repeated `L` times | `h^(l-1)` + the merged edges | each round: `GCNConv` (degree-normalized weighted sum over neighbors), then either `h^(l) = ReLU(conv(h^(l-1)))` (baseline) or `h^(l) = ReLU(h^(l-1) + conv(h^(l-1)))` (skip variant, the residual carrying the previous representation forward); `L` in `{1,2,3,4,6,8}` | `h^(L)` per node; also the tensor on which the smoothing metrics (`cos_sim`, `dir_energy`) are computed |
+| 7 | Slice by offset | `h^(L)` + the offsets from step 5 | cut the entity type's rows back out; the first 256 rows are this batch's seed entities | `h_seed` |
+| 8 | MLP head | `h_seed` | `Linear(128,128) -> ReLU -> Linear(128,1)`; `BCEWithLogitsLoss` in training, sigmoid at evaluation | one logit / probability per seed |
+
+Only step 6 changes across the twelve configurations (the value of `L`, and skip vs. no-skip); steps 1-5 and 7-8 are identical everywhere.
 
 ### 6.3 Comparison Design
 

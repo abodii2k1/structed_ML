@@ -1,0 +1,16 @@
+================================================
+STRUCTML ASPECT RUN: a3
+================================================
+Job ID: 368431
+Node: lambda1
+Starting at: Sat Jul 11 12:04:40 AM IDT 2026
+
+Python: 
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+
+================================================
+ASPECT a3 COMPLETE - exit code 127
+Finished at: Sat Jul 11 12:04:43 AM IDT 2026
+================================================

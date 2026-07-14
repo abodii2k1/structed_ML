@@ -1,0 +1,71 @@
+================================================
+STRUCTML EDGE ABLATION: rel-stack
+================================================
+Job ID: 368511
+Node: lambda1
+Starting at: Sun Jul 12 07:13:14 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_edge_ablation: rel-stack | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect2-1 =====
+
+===== exec cell edge-ablation-1 =====
+
+===== exec cell edge-ablation-2 =====
+
+##### edge ablation: rel-stack #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 17.38 seconds.
+rel-stack: 11 relations to ablate
+  seed 42: baseline AUROC 0.8772
+    - f2p_PostId: AUROC 0.8768 (drop +0.0004)
+    - f2p_RelatedPostId: AUROC 0.8773 (drop -0.0001)
+    - f2p_PostId: AUROC 0.8738 (drop +0.0033)
+    - f2p_UserId: AUROC 0.8456 (drop +0.0316)
+    - f2p_OwnerUserId: AUROC 0.8592 (drop +0.0179)
+    - f2p_ParentId: AUROC 0.8686 (drop +0.0085)
+    - f2p_UserId: AUROC 0.8676 (drop +0.0096)
+    - f2p_PostId: AUROC 0.8724 (drop +0.0048)
+    - f2p_PostId: AUROC 0.8587 (drop +0.0185)
+    - f2p_UserId: AUROC 0.8760 (drop +0.0011)
+    - f2p_UserId: AUROC 0.8410 (drop +0.0361)
+  seed 43: baseline AUROC 0.8737
+    - f2p_PostId: AUROC 0.8718 (drop +0.0019)
+    - f2p_RelatedPostId: AUROC 0.8748 (drop -0.0010)
+    - f2p_PostId: AUROC 0.8681 (drop +0.0057)
+    - f2p_UserId: AUROC 0.8599 (drop +0.0138)
+    - f2p_OwnerUserId: AUROC 0.8506 (drop +0.0231)
+    - f2p_ParentId: AUROC 0.8685 (drop +0.0053)
+    - f2p_UserId: AUROC 0.8524 (drop +0.0213)
+    - f2p_PostId: AUROC 0.8705 (drop +0.0032)
+    - f2p_PostId: AUROC 0.8610 (drop +0.0128)
+    - f2p_UserId: AUROC 0.8718 (drop +0.0019)
+    - f2p_UserId: AUROC 0.8416 (drop +0.0321)
+  seed 44: baseline AUROC 0.8722
+    - f2p_PostId: AUROC 0.8683 (drop +0.0039)
+    - f2p_RelatedPostId: AUROC 0.8723 (drop -0.0001)
+    - f2p_PostId: AUROC 0.8718 (drop +0.0004)
+    - f2p_UserId: AUROC 0.8313 (drop +0.0410)
+    - f2p_OwnerUserId: AUROC 0.8542 (drop +0.0180)
+    - f2p_ParentId: AUROC 0.8640 (drop +0.0082)
+    - f2p_UserId: AUROC 0.8604 (drop +0.0118)
+    - f2p_PostId: AUROC 0.8666 (drop +0.0056)
+    - f2p_PostId: AUROC 0.8570 (drop +0.0152)
+    - f2p_UserId: AUROC 0.8713 (drop +0.0009)
+    - f2p_UserId: AUROC 0.8188 (drop +0.0535)
+
+### DONE: edge ablation for rel-stack
+
+================================================
+EDGE ABLATION rel-stack COMPLETE - exit code 0
+Finished at: Sun Jul 12 09:14:39 PM IDT 2026
+================================================
