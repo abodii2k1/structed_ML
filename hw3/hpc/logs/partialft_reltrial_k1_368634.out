@@ -38,3 +38,14 @@ Done in 15.59 seconds.
     tokenized conditions_studies: 23948 rows
     tokenized facilities: 30668 rows
     tokenized sponsors_studies: 19567 rows
+    tokenized conditions: 23948 rows
+  k=1 seed=42: AUROC 0.6689 | params 5,003,535 | 6944s
+  k=1 seed=43: AUROC 0.6670 | params 5,003,535 | 6098s
+  k=1 seed=44: AUROC 0.6640 | params 5,003,535 | 4790s
+
+### DONE: partial finetune for rel-trial
+
+================================================
+PARTIAL LLM FINE-TUNE rel-trial k=1 COMPLETE - exit code 0
+Finished at: Tue Jul 14 11:51:54 PM IDT 2026
+================================================
