@@ -278,6 +278,9 @@ This subsection reports a follow-up investigation beyond the assignment's Aspect
 | 28 | - | 0.6844 ± .0080 |
 | 22 / 30 (full, no sharing) | 0.8729 ± .0017 | 0.6868 ± .0050 |
 
+![Aspect 2 supplementary loss curves](artifacts/loss_curves_A2_sage_basis.png)
+*Figure 7: a representative subset of basis counts per dataset (extremes plus the sweet-spot region), mean ± std over 3 seeds, star = restored best epoch.*
+
 **Convergence.** 51 of 54 (num_bases, seed) runs converged before the epoch cap (21/24 rel-stack, 30/30 rel-trial); the 3 exceptions (rel-stack `num_bases=1` seeds 42 and 43, `num_bases=4` seed 43) were still improving slightly at epoch 30, a minor caveat given rel-stack's own spread across basis counts is only about 0.005. Eval-time neighbor-sampling noise (Section 2) measured at mean |diff| = 0.00003, max = 0.0002 across all 54 runs - consistent with the rest of this report.
 
 **On rel-stack, there is a real sweet spot.** AUROC rises from `num_bases=1` (0.8752) to a plateau around `num_bases=2-16` (0.877-0.878), then drops at `num_bases=22` (0.8729) - the full-independence, no-sharing endpoint is the *worst* point in the entire sweep, below even the official hetero result (0.8746). The best point (`num_bases=2`, 0.8780) closes about 63% of the gap between official hetero (0.8746) and homo (0.8800). This is real, verified evidence that fragmenting parameters across rel-stack's severely imbalanced relations costs real performance, and that moderate sharing recovers a substantial part of it. It does not, however, fully close the gap to homo - the best basis-decomposition point still falls about 0.002 short of homo's 0.8800, so parameter fragmentation is a real, substantial, but incomplete explanation for why homogeneous wins on rel-stack.
@@ -297,7 +300,7 @@ In the heterogeneous setting, how does the initial node representation affect do
 ### 5.2 Model Architecture
 
 ![Aspect 3 architecture](artifacts/architecture_A3.png)
-*Figure 7: three swappable input encoders feeding an identical HGT backbone and head. Each encoder consumes a different view of the same row (its index only, its typed cell values, or its serialization to text); all three emit the same 128-d node vector. Every numbered step is explained in the walkthrough table below.*
+*Figure 8: three swappable input encoders feeding an identical HGT backbone and head. Each encoder consumes a different view of the same row (its index only, its typed cell values, or its serialization to text); all three emit the same 128-d node vector. Every numbered step is explained in the walkthrough table below.*
 
 All three variants share the exact same downstream model: two `HGTConv` layers (`heads=4`) followed by the same two-layer MLP head. Only the block that produces each node's initial 128-dimensional vector changes:
 
@@ -305,7 +308,7 @@ All three variants share the exact same downstream model: two `HGTConv` layers (
 - **column:** the shared `HeteroEncoder` used everywhere else in this project (torch_frame typed-column encoders).
 - **llm:** each row is serialized to a string (`"col1=v1, col2=v2, ..."`), embedded once with frozen sentence-transformers MiniLM (`all-MiniLM-L6-v2`, 384-d), and a learned per-type `Linear(384, 128)` projects it down; MiniLM itself is never fine-tuned.
 
-**Step-by-step walkthrough (numbers match Figure 7; exactly one of 4a/4b/4c is active per run):**
+**Step-by-step walkthrough (numbers match Figure 8; exactly one of 4a/4b/4c is active per run):**
 
 | # | Step | Input | What happens | Output |
 |---|---|---|---|---|
@@ -351,11 +354,11 @@ rel-stack and rel-trial, global protocol (Section 2), fan-out [6, 6] on the cach
 | llm | 0.6545 ± .0045 | 0.7489 | 3.23M |
 
 ![Aspect 3 loss curves](artifacts/loss_curves_A3_hpc.png)
-*Figure 8: all three strategies, per-epoch curves, mean ± std over 3 seeds.*
+*Figure 9: all three strategies, per-epoch curves, mean ± std over 3 seeds.*
 
 ### 5.6 Convergence Analysis
 
-All 18 runs converged with no run hitting the epoch cap still improving. The three strategies show three distinct dynamics worth reading directly off Figure 8: **id overfits hard and fast** on both datasets - train loss collapses toward 0 within about 5-6 epochs while validation loss climbs 5-9x above its own minimum over the following few epochs, and its starred best epoch lands very early (epoch 2-5), well before the collapse; early stopping is load-bearing here, not a formality. **column and llm show much milder late-training drift**, the ordinary patience-window behavior of any early-stopped model rather than a dramatic collapse: validation loss at the final epoch is at most 1.26x its best-epoch value for column and 1.68x for llm (against id's 5-9x), and validation AUROC dips by only 0.4-2.2 points for llm and typically under 1 point for column (one column/rel-stack seed is a mild outlier at -8.8 points) - real but far smaller in magnitude than id's collapse. Aspect 3 is also the only aspect with **zero** discrepancy between logged curve values and officially reported scores (Section 2), because its cached subgraph rarely has a node exceeding the [6,6] fan-out cap, so evaluation has nothing to randomly subsample - a useful contrast confirming that the small noise seen elsewhere really is a fan-out/degree effect and not a general property of our evaluation code.
+All 18 runs converged with no run hitting the epoch cap still improving. The three strategies show three distinct dynamics worth reading directly off Figure 9: **id overfits hard and fast** on both datasets - train loss collapses toward 0 within about 5-6 epochs while validation loss climbs 5-9x above its own minimum over the following few epochs, and its starred best epoch lands very early (epoch 2-5), well before the collapse; early stopping is load-bearing here, not a formality. **column and llm show much milder late-training drift**, the ordinary patience-window behavior of any early-stopped model rather than a dramatic collapse: validation loss at the final epoch is at most 1.26x its best-epoch value for column and 1.68x for llm (against id's 5-9x), and validation AUROC dips by only 0.4-2.2 points for llm and typically under 1 point for column (one column/rel-stack seed is a mild outlier at -8.8 points) - real but far smaller in magnitude than id's collapse. Aspect 3 is also the only aspect with **zero** discrepancy between logged curve values and officially reported scores (Section 2), because its cached subgraph rarely has a node exceeding the [6,6] fan-out cap, so evaluation has nothing to randomly subsample - a useful contrast confirming that the small noise seen elsewhere really is a fan-out/degree effect and not a general property of our evaluation code.
 
 ### 5.7 Discussion
 
@@ -366,6 +369,40 @@ All 18 runs converged with no run hitting the epoch cap still improving. The thr
 **Why does llm not beat column despite having a strong pretrained encoder behind it?** Two compounding reasons. First, serializing a row into one string flattens numeric and categorical structure into text tokens, discarding exactly the structure column-wise encoding preserves directly. Second, MiniLM is frozen; only a linear projection is learned on top, giving llm the fewest learned parameters of the three strategies (1.65M / 3.23M) and correspondingly the least room to adapt to the task. llm's margin over id does grow from rel-stack (+0.073) to text-heavy rel-trial (+0.140), confirming language-model embeddings do capture textual signal where it exists - just not enough to close the gap to typed encoding.
 
 **Usability.** id is trivial to implement (an embedding table) but not transferable to new entities; column-wise needs `torch_frame` and typed-column metadata; llm needs `sentence-transformers` plus a row-serialization and embedding pipeline, the heaviest one-off preprocessing cost of the three despite its light final parameter count.
+
+### 5.8 Supplementary: Fine-Tuning the LLM Encoder
+
+This subsection reports a follow-up investigation beyond the assignment's Aspect 3 requirement; the official `id`/`column`/`llm` comparison above already fully satisfies it on its own.
+
+**Question.** The frozen `llm` strategy never lets MiniLM adapt to the task - only a linear projection on top is trained. Does letting MiniLM itself train close the gap to `column`, and if the naive version of that (fine-tune the whole model) does not work, does a more careful version?
+
+**Method, in two stages.** First, a full fine-tune: all of MiniLM (~22.7M params) trained end-to-end, discriminative learning rate (MiniLM at `2e-5`, everything else at the usual `1e-3`), on the same 6,000/2,000 shared sample as the other three strategies. This came out *worse* than frozen on rel-trial (0.6388 vs. 0.6545) - diagnosed as overfitting: at that sample size there are only about 12 batches per epoch, so a 30-epoch budget means the model sees the same ~12 batches up to 30 times, and 22.7M trainable parameters is a lot of capacity to fit repeatedly to that little data. Second, a follow-up testing that diagnosis directly with two changes at once: (a) freeze all but the last 1 or 2 MiniLM transformer layers (`k=1`: 1.77M trainable params, `k=2`: 3.55M - both confirmed by direct inspection of which parameters receive gradient, with zero leakage either direction), and (b) train on a separately-cached, 5x larger sample (30,000 train / 10,000 validation seeds) built specifically for this follow-up, not shared with the official three strategies. Same 30-epoch/patience-6/3-seed protocol otherwise.
+
+**Results.**
+
+| dataset | strategy | AUROC | AUPRC | learned params |
+|---|---|---|---|---|
+| rel-stack | llm (frozen) | 0.7849 ± .0031 | 0.1531 | 1.65M |
+| rel-stack | llm-finetuned (full, 6 layers, shared sample) | 0.8000 ± .0107 | - | 24.36M |
+| rel-stack | llm-partial (k=1, larger sample) | 0.8238 ± .0045 | 0.1788 | 3.42M |
+| rel-stack | llm-partial (k=2, larger sample) | **0.8303 ± .0073** | 0.1973 | 5.20M |
+| rel-stack | column (reference) | **0.8402 ± .0064** | 0.1772 | 3.60M |
+| rel-trial | llm (frozen) | 0.6545 ± .0045 | 0.7489 | 3.23M |
+| rel-trial | llm-finetuned (full, 6 layers, shared sample) | 0.6388 ± .0104 | - | 25.94M |
+| rel-trial | llm-partial (k=1, larger sample) | **0.6667 ± .0024** | 0.7508 | 5.00M |
+| rel-trial | llm-partial (k=2, larger sample) | 0.6665 ± .0030 | 0.7411 | 6.78M |
+| rel-trial | column (reference) | **0.6769 ± .0022** | 0.7386 | 8.77M |
+
+![Aspect 3 supplementary loss curves](artifacts/loss_curves_A3_llm_family.png)
+*Figure 10: frozen vs. full fine-tune vs. partial fine-tune (k=1, k=2), mean ± std over 3 seeds, star = restored best epoch.*
+
+**Convergence.** All 12 partial-fine-tune runs converged cleanly before the epoch cap (best epochs ranging 5-11, ordinary early stopping, no run still improving at epoch 30) and the officially reported AUROC matched the logged curve value exactly for every run (mean and max |diff| = 0.0). The full fine-tune's overfitting is directly visible in Figure 10: its validation loss (red) drops briefly then rises sharply past its starred best epoch on both datasets, most dramatically on rel-trial, while both partial variants (blue, green) stay flat and stable well past their own best epochs - a visibly different failure mode, not just a different number.
+
+**The diagnosis holds up: partial fine-tuning plus more data beats both frozen and full fine-tuning, on both datasets.** On rel-stack, ordering is frozen (0.7849) < full-finetune (0.8000) < k=1 (0.8238) < k=2 (0.8303) < column (0.8402): k=2 closes 82% of the gap between frozen and column, versus full fine-tuning's 27%. On rel-trial, ordering is full-finetune (0.6388) < frozen (0.6545) < k=2 (0.6665) ≈ k=1 (0.6667) < column (0.6769): partial fine-tuning does not just improve on full fine-tuning, it reverses the regression entirely and closes about 55% of the frozen-to-column gap, while full fine-tuning had moved *away* from column. Restricting how many layers can adapt, combined with enough data that those layers do not just memorize a small repeated sample, is what full fine-tuning was missing on both datasets.
+
+**k=1 vs. k=2.** On rel-stack, k=2 clearly beats k=1 (0.8303 vs. 0.8238) - more adaptable capacity helps when there is more, and more textually rich, content to adapt to (rel-stack's `posts` and `postHistory` node types carry long free-text bodies). On rel-trial, k=1 and k=2 are statistically tied (0.6667 vs. 0.6665, well inside one standard deviation) - one unfrozen layer is already enough to capture what rel-trial's shorter, more uniform text has to offer, and the second unfrozen layer adds capacity without adding benefit.
+
+**Even partial fine-tuning does not fully close the gap to column** (0.0099 short on rel-stack, 0.0102 short on rel-trial) - consistent with this report's broader Aspect 3 finding that serializing a row into text discards some structure no amount of adaptation recovers, while adaptation capacity and data volume separately explain why the frozen and fully-fine-tuned versions underperformed by more than that residual amount.
 
 ---
 
@@ -378,11 +415,11 @@ As we add layers, do node representations collapse toward each other (oversmooth
 ### 6.2 Model Architecture
 
 ![Aspect 4 architecture](artifacts/architecture_A4.png)
-*Figure 9: the depth-configurable GCN stack. The arrows carry the data at each step (`h^(0)` after `collapse()`, `h^(l)` between repeated layers, `h^(L)` into the head); the optional skip connection is shown looping the layer input around each `GCNConv`. Every numbered step is explained in the walkthrough table below.*
+*Figure 11: the depth-configurable GCN stack. The arrows carry the data at each step (`h^(0)` after `collapse()`, `h^(l)` between repeated layers, `h^(L)` into the head); the optional skip connection is shown looping the layer input around each `GCNConv`. Every numbered step is explained in the walkthrough table below.*
 
 A homogeneous operator (GCN was chosen because oversmoothing was first characterized in this model family): the same per-table `HeteroEncoder` as every other aspect, followed by Aspect 2's `collapse()` to merge the typed graph into one node/edge set, then `L` stacked `GCNConv` layers (`L` in `{1,2,3,4,6,8}`), then the same MLP head. Each layer computes `h = relu(conv(h_prev))` in the baseline, or `h = relu(h_prev + conv(h_prev))` in the skip variant - a residual connection carrying the previous layer's representation forward.
 
-**Step-by-step walkthrough (numbers match Figure 9):**
+**Step-by-step walkthrough (numbers match Figure 11):**
 
 | # | Step | Input | What happens | Output |
 |---|---|---|---|---|
@@ -432,13 +469,13 @@ rel-stack and rel-trial, global protocol (Section 2), fan-out [10, 10], max 1000
 | 8 | 0.6757 | 0.6811 | 0.616 | 0.686 | 0.201 | 0.348 |
 
 ![Aspect 4 loss curves - depths 1 and 2](artifacts/loss_curves_A4_depths1_2.png)
-*Figure 10: depths 1 and 2, solid = no-skip, dashed = skip.*
+*Figure 12: depths 1 and 2, solid = no-skip, dashed = skip.*
 
 ![Aspect 4 loss curves - depths 3 and 4](artifacts/loss_curves_A4_depths3_4.png)
-*Figure 11: depths 3 and 4, same layout.*
+*Figure 13: depths 3 and 4, same layout.*
 
 ![Aspect 4 loss curves - depths 6 and 8](artifacts/loss_curves_A4_depths6_8.png)
-*Figure 12: depths 6 and 8, same layout - the panel where the skip-vs-no-skip separation is clearest.*
+*Figure 14: depths 6 and 8, same layout - the panel where the skip-vs-no-skip separation is clearest.*
 
 ### 6.6 Convergence Analysis
 
