@@ -19,3 +19,7 @@ WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated req
 Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights:  31%|███       | 32/103 [00:00<00:00, 250.42it/s]Loading weights:  85%|████████▌ | 88/103 [00:00<00:00, 403.02it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 423.22it/s]
 Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3811.19it/s]
 a3-partial-1:97: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3881.87it/s]
+a3-partial-1:97: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 5100.81it/s]
+a3-partial-1:97: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.

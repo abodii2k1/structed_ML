@@ -35,3 +35,13 @@ Done in 17.22 seconds.
     tokenized comments: 163934 rows
     tokenized votes: 154484 rows
     tokenized badges: 111108 rows
+  k=2 seed=42: AUROC 0.8383 | params 5,195,839 | 21538s
+  k=2 seed=43: AUROC 0.8286 | params 5,195,839 | 25110s
+  k=2 seed=44: AUROC 0.8240 | params 5,195,839 | 30477s
+
+### DONE: partial finetune for rel-stack
+
+================================================
+PARTIAL LLM FINE-TUNE rel-stack k=2 COMPLETE - exit code 0
+Finished at: Wed Jul 15 02:54:10 PM IDT 2026
+================================================
