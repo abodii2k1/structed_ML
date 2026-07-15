@@ -33,6 +33,15 @@ These are two very different domains - a Q&A community and clinical trials - so 
 
 Each database is turned into a heterogeneous graph (`HeteroData`): one node per table row, with edges following primary-key to foreign-key links. RelBench stores each link as a forward edge `f2p_<key>` and a reverse edge `rev_f2p_<key>`, so by default messages can flow in both directions. Row timestamps are attached as a time attribute, and we use the temporal train/validation/test splits defined by RelBench. Temporal splits plus time-aware neighbor sampling guarantee that a node never sees information from the future.
 
+These first two steps are identical across every aspect in this report and are described here once rather than re-explained in each aspect's own walkthrough table:
+
+| # | Step | Input | What happens | Output |
+|---|---|---|---|---|
+| 1 | Raw RDB | the database's tables | every table row is about to become one graph node, every PK-FK link one edge | tables with typed columns |
+| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row (node type = table name); each PK-FK link becomes a forward edge `f2p_<key>` plus a reverse edge `rev_f2p_<key>`; row timestamps attached | the full heterogeneous graph (`HeteroData`) |
+
+Each aspect's own walkthrough table (Sections 3.2, 4.2, 5.2, 6.2) picks up from step 3 onward, where the aspect-specific sampling, encoding, or architecture choices begin.
+
 ### Default node features
 
 For Aspects 1, 2, and 4, the initial node features come from column-wise encoders, the standard RelBench / torch_frame encoders that map each typed column to a numeric vector. Text columns are embedded using GloVe and randomly projected to 128 dimensions to bound memory. Aspect 3 is the experiment that varies this choice.
@@ -78,12 +87,10 @@ Every variant shares the same skeleton: a per-table `HeteroEncoder` maps each ro
 - **MPNN-U (undirected):** forward and reverse edge types both get a convolution, but each reverse edge type's convolution module is literally the same object as its forward counterpart (`rel2conv[e[1]] = conv; convs[rev_e] = rel2conv[...]` in code), so the two directions share one learned transform.
 - **Dir-GNN:** forward and reverse edge types each get their *own*, independently initialized convolution module, so the two directions never share weights.
 
-**Step-by-step walkthrough (numbers match Figure 1):**
+**Step-by-step walkthrough (numbers match Figure 1; steps 1-2 are the shared graph-construction steps described once in Section 2):**
 
 | # | Step | Input | What happens | Output |
 |---|---|---|---|---|
-| 1 | Raw RDB | the database's tables | nothing yet - every table row is about to become one graph node, and every PK-FK link one edge | tables with typed columns |
-| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row (node type = table name); each PK-FK link becomes a forward edge `f2p_<key>` (child row -> parent row) plus a reverse edge `rev_f2p_<key>`; each row's timestamp is stored on its node | the full heterogeneous graph (`HeteroData`) |
 | 3 | Sample subgraph (`NeighborLoader`) | full graph + a mini-batch of 512 labeled seed users | for each seed, sample at most 128 neighbors per edge type per hop, going out 2 hops, keeping only neighbors whose timestamp is <= the seed's prediction time (so no information from the future leaks in) | mini-batch subgraph: the seed rows + their sampled neighbors + the edges between them |
 | 4 | HeteroEncoder | the typed columns of every node in the batch | per node type, each column is encoded by an encoder matched to its type (numeric -> normalized embedding; categorical -> learned embedding; text -> GloVe 300-d averaged and projected to 128-d), then the per-column embeddings are fused into one vector per row | `x_v` in R^128 for every batch node |
 | 5 | Message-passing layer 1 | all `x_v` + the edge types the mode wires in | for every wired edge type, each destination node aggregates its sampled neighbors (SAGEConv: unweighted mean plus a separate self-transform; GATConv: 4-head attention over neighbors, heads averaged), producing one message per edge type; the messages landing on the same node are **summed** across edge types, then passed through ReLU. A node type that receives no messages keeps its previous vector | `h_v^(1)` in R^128 per node |
@@ -103,7 +110,7 @@ rel-stack and rel-trial, both under the global protocol (Section 2): 30-epoch bu
 
 ### 3.5 Results
 
-**Table 1a - rel-stack (single-dataset, no line break needed within a dataset; datasets are separated by the thicker rule below)**
+**Table 1a - rel-stack**
 
 | backbone | mode | AUROC | AUPRC | precision | recall | params |
 |---|---|---|---|---|---|---|
@@ -160,7 +167,7 @@ Does treating the graph as heterogeneous, with typed nodes and edges, outperform
 ![Aspect 2 architecture](artifacts/architecture_A2.png)
 *Figure 4: heterogeneous vs. homogeneous pipelines. Steps 1-4 (raw tables through the shared `HeteroEncoder`) and 9-10 (shared MLP head and output) are identical for all four variants; the two branches differ only in what happens between them. Every numbered step is explained in the walkthrough tables below.*
 
-All four variants share the same per-table `HeteroEncoder`. The heterogeneous variants then run a `HeteroConv` (one `SAGEConv`, or native `HGTConv` with `heads=4`, applied per edge type) so type information is preserved through message passing. The homogeneous variants instead call `collapse()` before message passing, which does the following (this is the concrete answer to "how did you convert heterogeneous into homogeneous," per the TA's note):
+All four variants share the same per-table `HeteroEncoder`. The heterogeneous variants then run a `HeteroConv` (one `SAGEConv`, or native `HGTConv` with `heads=4`, applied per edge type) so type information is preserved through message passing. The homogeneous variants instead call `collapse()` before message passing, which converts the typed graph into an untyped one as follows:
 
 1. Concatenate every node type's encoded embeddings into one matrix, recording each type's row-offset.
 2. For every edge type `(s, rel, d)`, add `offsets[s]` to its source indices and `offsets[d]` to its target indices, then concatenate all edge-index tensors into one merged edge index.
@@ -169,12 +176,10 @@ All four variants share the same per-table `HeteroEncoder`. The heterogeneous va
 
 For **HGT-homo** specifically, the assignment requires literally disabling heterogeneity at the data level, not just algorithmically: we wrap the merged graph in an explicit single-type `HeteroData()` (`hom["node"].x = x_all`, `hom["node","to","node"].edge_index = ei_all`) before calling the same `HGTConv`, so its own type-lookup machinery sees exactly one node type and one edge type, matching the spec's construction exactly rather than only being computationally equivalent to it.
 
-**Step-by-step walkthrough (numbers match Figure 4).** Shared steps, identical for all four variants:
+**Step-by-step walkthrough (numbers match Figure 4; steps 1-2 are the shared graph-construction steps described once in Section 2).** Steps 3-4 are shared across all four variants of this aspect specifically:
 
 | # | Step | Input | What happens | Output |
 |---|---|---|---|---|
-| 1 | Raw RDB | the database's tables | every table row is about to become one graph node, every PK-FK link one edge | tables with typed columns |
-| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row (node type = table name); each PK-FK link becomes a forward edge `f2p_<key>` plus a reverse edge `rev_f2p_<key>`; row timestamps attached | the full heterogeneous graph (`HeteroData`) |
 | 3 | Sample subgraph (`NeighborLoader`) | full graph + a mini-batch of 512 labeled seed entities | sample at most 128 neighbors per edge type per hop, 2 hops, only neighbors with timestamp <= the seed's prediction time | mini-batch subgraph |
 | 4 | HeteroEncoder | the typed columns of every batch node | per node type, per-column typed encoders (numeric / categorical / GloVe text) fused into one vector per row; **each table enters separately** and keeps its own encoder weights | `x_v` in R^128 per node, still typed: one matrix `X_type` per node type |
 
@@ -206,7 +211,7 @@ So the comparison isolates exactly one question: given identical inputs `X_type`
 
 ### 4.3 Comparison Design
 
-Same hidden size, layers, fan-out, encoder output dimension, head, and training for all four variants; only the message-passing block differs, using the shared `HeteroEncoder` in every case so the comparison isolates heterogeneity in the message-passing step, not the input encoding. Heterogeneous models have more parameters (weight duplication per type), so we report parameter counts directly (Table 2). Because the one case where heterogeneity wins by a real margin also has more parameters (SAGE on rel-trial), we additionally ran a **parameter-matched control**: a widened homogeneous SAGE (`homo-wide`, hidden size increased until its parameter count matches hetero's, 6.72M vs. hetero's 8.27M) on rel-trial, 3 seeds.
+Same hidden size, layers, fan-out, encoder output dimension, head, and training for all four variants; only the message-passing block differs, using the shared `HeteroEncoder` in every case so the comparison isolates heterogeneity in the message-passing step, not the input encoding. Heterogeneous models have more parameters (weight duplication per type), so we report parameter counts directly (Table 2). Because the one case where heterogeneity wins by a real margin also has more parameters (SAGE on rel-trial), we additionally ran a **parameter-matched control**: a widened homogeneous SAGE (`homo-wide`, hidden size increased until its parameter count matches hetero's, 6.72M vs. hetero's 8.27M) on rel-trial, 3 seeds. rel-stack's asymmetric result (homo winning) does not get this same single-point control, but it gets a more thorough capacity exploration instead - Section 4.8's basis-decomposition sweep varies capacity across a full range on rel-stack specifically, rather than at just one matched point.
 
 ### 4.4 Experimental Setup
 
@@ -308,13 +313,11 @@ All three variants share the exact same downstream model: two `HGTConv` layers (
 - **column:** the shared `HeteroEncoder` used everywhere else in this project (torch_frame typed-column encoders).
 - **llm:** each row is serialized to a string (`"col1=v1, col2=v2, ..."`), embedded once with frozen sentence-transformers MiniLM (`all-MiniLM-L6-v2`, 384-d), and a learned per-type `Linear(384, 128)` projects it down; MiniLM itself is never fine-tuned.
 
-**Step-by-step walkthrough (numbers match Figure 8; exactly one of 4a/4b/4c is active per run):**
+**Step-by-step walkthrough (numbers match Figure 8; steps 1-2 are the shared graph-construction steps described once in Section 2; exactly one of 4a/4b/4c is active per run):**
 
 | # | Step | Input | What happens | Output |
 |---|---|---|---|---|
-| 1 | Raw RDB | the database's tables | every table row is about to become one graph node | tables with typed columns |
-| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row; each PK-FK link becomes a forward `f2p_*` and reverse `rev_f2p_*` edge; timestamps attached | the full heterogeneous graph |
-| 3 | Fixed cached subsample | full graph + the task's labeled entities | a label-stratified sample of seed studies (6000 train / 2000 validation, preserving each split's positive rate) is drawn **once**; their 2-hop time-respecting neighborhoods are sampled with fan-out [6,6]; the resulting subgraph is cached to disk and reused identically by all three strategies and all seeds | one fixed subgraph with seed labels attached |
+| 3 | Fixed cached subsample | full graph + the task's labeled entities | a label-stratified sample of seed studies is drawn **once** (6000 train seeds for both datasets; validation is requested at 2000 but capped by what each dataset's validation table actually has available - rel-stack reaches the full 2000, rel-trial's smaller validation table caps at 960 - preserving each split's positive rate either way); their 2-hop time-respecting neighborhoods are sampled with fan-out [6,6]; the resulting subgraph is cached to disk and reused identically by all three strategies and all seeds | one fixed subgraph with seed labels attached |
 | 4a | id encoder | each node's **index only** | `nn.Embedding(N_type, 128)` per node type: a pure lookup table returning the node's own learned slot; every cell value is ignored; transductive (a slot is only trained if that node appears in some training computation) | `x_v` in R^128 |
 | 4b | column encoder | each node's **typed cell values** | the same `HeteroEncoder` as every other aspect: per-column typed encoders (torch_frame) fused into one vector per row | `x_v` in R^128 |
 | 4c | llm encoder | each row **serialized to text** (`"NctId=NCT01, Phase=2, ..."`) | the string is embedded once by frozen MiniLM (384-d, precomputed for every subgraph node when the cache is built); a learned per-type `Linear(384,128)` projects it down - the only trained part | `x_v` in R^128 |
@@ -327,7 +330,7 @@ Steps 5-8 are bit-for-bit identical across the three strategies; only the step-4
 
 ### 5.3 Comparison Design
 
-All three strategies train on one fixed, cached subsample per dataset - a label-stratified sample of seed entities (6000 train, 2000 validation) plus their 2-hop time-respecting neighborhoods, with MiniLM embeddings precomputed once for every node in the subgraph. Using the identical subsample for all three strategies is what the assignment requires, and it also makes the id encoding's transductive weakness a fair test rather than a sampling artifact: every strategy sees the same validation entities.
+All three strategies train on one fixed, cached subsample per dataset - a label-stratified sample of seed entities (6000 train seeds for both datasets; validation is requested at 2000 but capped by each dataset's actual validation-table size - rel-stack achieves the full 2000, rel-trial's validation table is smaller and caps at 960) plus their 2-hop time-respecting neighborhoods, with MiniLM embeddings precomputed once for every node in the subgraph. Using the identical subsample for all three strategies is what the assignment requires, and it also makes the id encoding's transductive weakness a fair test rather than a sampling artifact: every strategy sees the same validation entities.
 
 ### 5.4 Experimental Setup
 
@@ -365,6 +368,8 @@ All 18 runs converged with no run hitting the epoch cap still improving. The thr
 **The ordering is clean and consistent: column > llm > id on both datasets.** Typed column encoders carry the most signal because they preserve numeric precision and categorical structure directly; id and llm both discard or reshape that structure in different ways.
 
 **Why does id have by far the most parameters (18-26M - 2.1x-7.1x column's and 5.7x-15.5x llm's, depending on dataset) yet the worst performance?** Its parameter count is an embedding table sized to the number of nodes in the sampled subgraph, not to the schema - about 95% of those parameters are raw per-node lookup slots that encode "which specific node this is," not any pattern transferable to a node the model has not seen trained. On rel-stack it still reaches 0.7117, meaning a user's 2-hop neighborhood carries real engagement signal even with zero cell values; on rel-trial it is close to chance (0.5145) because a validation study's own embedding was likely never updated during training, and pure connectivity carries little outcome signal there. This is a direct illustration of the point in Section 4's discussion generalized further: raw parameter count is not capacity in any useful sense when those parameters cannot transfer to unseen entities.
+
+id's rel-trial AUPRC (0.5889) looks like a separate anomaly next to its near-chance AUROC (0.5145) - column and llm's AUPRC (0.7386, 0.7489) are much closer to their own AUROC in relative terms - but it is not: AUROC's chance floor is always 0.5 regardless of class balance, while AUPRC's chance floor is the positive-class prevalence. rel-trial's validation split is 58.44% positive (Section 5.3), and id's measured AUPRC (0.5889) sits within 0.0045 of that 0.5844 prevalence - almost exactly where a ranking with no real signal would land. Both numbers are telling the same story (id is barely better than random on rel-trial), just against each metric's own baseline.
 
 The 25.57M/18.40M parameter count is wasteful in that sense, but not in wall-clock terms: `id`'s best epoch lands at epoch 2-3 on rel-stack and 2-5 on rel-trial (Section 5.6), and training stops entirely by epoch 8-11 once patience runs out - both datasets' validation AUROC is already declining by epoch 5, not merely plateaued. Measured training time confirms this: `id` is the *cheapest* of the three strategies to train (12.7s/33.4s mean per run on rel-stack/rel-trial), against column's 30.6s/60.4s and llm's 19.9s/68.5s - despite owning 5-16x more parameters than either. Early stopping catches the collapse quickly enough that the large embedding table costs comparatively little compute, even though it is trained pointlessly.
 
@@ -423,12 +428,10 @@ As we add layers, do node representations collapse toward each other (oversmooth
 
 A homogeneous operator (GCN was chosen because oversmoothing was first characterized in this model family): the same per-table `HeteroEncoder` as every other aspect, followed by Aspect 2's `collapse()` to merge the typed graph into one node/edge set, then `L` stacked `GCNConv` layers (`L` in `{1,2,3,4,6,8}`), then the same MLP head. Each layer computes `h = relu(conv(h_prev))` in the baseline, or `h = relu(h_prev + conv(h_prev))` in the skip variant - a residual connection carrying the previous layer's representation forward.
 
-**Step-by-step walkthrough (numbers match Figure 11):**
+**Step-by-step walkthrough (numbers match Figure 11; steps 1-2 are the shared graph-construction steps described once in Section 2):**
 
 | # | Step | Input | What happens | Output |
 |---|---|---|---|---|
-| 1 | Raw RDB | the database's tables | every table row is about to become one graph node | tables with typed columns |
-| 2 | Build graph (`make_pkey_fkey_graph`) | all tables + their PK-FK links | one node per row; each PK-FK link becomes a forward `f2p_*` and reverse `rev_f2p_*` edge; timestamps attached | the full heterogeneous graph |
 | 3 | Sample subgraph (`NeighborLoader`) | full graph + a mini-batch of 256 seed entities | at most 10 neighbors per edge type per hop, 2 hops, time-respecting - and **fixed**: the same 2-hop subgraph is handed to every depth setting, so `L` never changes what the model can see | mini-batch subgraph, identical across all depths |
 | 4 | HeteroEncoder | the typed columns of every batch node | per-column typed encoders fused into one vector per row | `x_v` in R^128 per node, per node type |
 | 5 | `collapse()` | per-type matrices + typed edges | same operation as Aspect 2 step 5b: concatenate per-type matrices into `x_all` (recording offsets), shift and merge all edge indices into one edge set | `h^(0) = x_all` + one merged `edge_index` |
@@ -447,6 +450,8 @@ The critical design choice for isolating depth is a **fixed 2-hop sampled subgra
 rel-stack and rel-trial, global protocol (Section 2), fan-out [10, 10], max 1000 mini-batches/epoch (this aspect trains 12 configurations per dataset per seed, so the per-epoch budget is capped tighter than Aspects 1-3).
 
 ### 6.5 Results
+
+Reading the two smoothing columns: `cos_sim` is a mean pairwise cosine similarity across node embeddings, so **higher means more collapsed** (all nodes pointing the same direction, toward 1); `dir_energy` is a neighbor-distance measure, so **lower means more collapsed** (neighbors have converged to near-identical embeddings, toward 0). The two move in opposite directions under oversmoothing by construction - watch for `cos_sim` rising together with `dir_energy` falling as the collapse signature, not either column alone. (Full definitions and how they relate to Tutorial 7's formulas are in Section 6.8.)
 
 **Table 4a - rel-stack**
 
@@ -503,14 +508,35 @@ This study uses one model family, GCN, as the assignment allows, and the fixed-s
 
 We take HGT, one of our heterogeneous models, and describe what must change for it to be pretrained on one database and reused on another database with a different schema, so that pretraining can help.
 
-**Required changes.**
+### 7.1 The core blocker: HGT's architecture is schema-coupled
 
-- **Schema-agnostic input.** Replace per-table, per-column learned encoders with encoders keyed by semantic column type and shared across datasets, plus a frozen shared text encoder for text columns. Normalize feature spaces so new tables map into the same representation space.
-- **Schema-agnostic message passing.** HGT currently uses separate weights per node type and relation, which ties it to one schema. Replace this with parameters generated from relation and type metadata, such as a hypernetwork or relation meta-embeddings, so unseen types and relations can be handled at transfer time.
-- **Task-agnostic pretraining objective.** Pretrain with self-supervision that does not require task labels, such as masked attribute reconstruction, PK-FK link prediction, or a contrastive node objective.
-- **Transferable readout.** Detach the task-specific head. For a new dataset, attach a fresh head and either linear-probe or fine-tune the pretrained backbone.
+HGT's attention mechanism is built from three sets of weight matrices - query, key, and value projections - each indexed **per node type** and **per relation**: `W_Q^(τ)`, `W_K^(τ)`, `W_V^(τ)` for node type `τ`, plus a separate attention/message weight per relation. These matrices are initialized and trained against the source schema's specific type and relation *names*. There is no way to port them to a target database with different table names, a different number of tables, or different column dimensions - a type the model never saw during pretraining simply has no row in any of these weight tensors to look up. Every other required change below is secondary to this one: none of them matter if the backbone itself cannot accept an unfamiliar schema as input in the first place.
 
-**Proposed experiment.** Pretrain on a source dataset using a self-supervised objective, then evaluate on a target dataset under three settings: training from scratch, pretrain then fine-tune, and pretrain then linear-probe. Plot the four metrics against the fraction of target labels used in a few-shot curve. Pretraining is effective if it beats training from scratch, especially in the low-label regime.
+The fix, following the fact-encoding and cross-attention design used by Griffin (Wang et al., ICML 2025) and Relational Transformers: replace HGT's type-indexed weight *lookup* with weights *generated on the fly* from a schema description. A frozen text encoder reads each node type's and relation's name (e.g. "studies", "conditions", the foreign-key attribute name linking them) and outputs the corresponding projection matrices - a hypernetwork-style projection, not a fixed table. An unseen type at inference time still produces a valid projection, because it is generated from its name rather than looked up by an index that only exists for schemas seen during pretraining.
+
+### 7.2 Required changes, mapped to seven design axes
+
+| Design axis | HGT today (broken) | Required fix |
+|---|---|---|
+| Handling unknown schema | Per-node-type weight matrices `W_Q^(τ)`, `W_K^(τ)`, `W_V^(τ)` hard-coded to the source schema's node types | Replace type-specific matrices with a text encoder that embeds node-type and column names into vectors, so unseen types produce a valid embedding at inference time (Griffin, Relational Transformers) |
+| What is encoded, and dimension mismatch | Per-table column encoders trained on a fixed schema; each node type has a fixed feature dimension | Encode at the cell level: per-cell type-specific encoders (numeric / text), aggregated into one row vector via cross-attention - Griffin's fact-encoding design |
+| Handling relational structure | Attention uses per-relation weight tensors, again schema-specific | A schema-agnostic MPNN that encodes edge types from their textual metadata (table names, FK attribute name) rather than a lookup index, as Griffin does |
+| Type of generalization | None - fully transductive, no transfer mechanism at all | Target fine-tuning (PEFT-style, e.g. TabLLM's IA³ scaling vectors) on the target database; zero-shot transfer (as Relational Transformers attempt) is the more ambitious alternative, but fine-tuning is the more realistic target given HGT's graph-structured inductive bias |
+| Specifying the prediction task | A hard-coded binary-classification head fixed at training time | Frame the task as masked-cell prediction: given a row and a masked column, predict its value - schema-agnostic and transferable across tasks (the framing both Griffin and Relational Transformers use) |
+| Handling different task types | `BCEWithLogitsLoss` only, binary classification | A dual decoder - one pretrained classification head, one pretrained regression head - selected by the target column's data type, as in Griffin |
+| Training strategy | Supervised on one database, with that database's fixed labels | Two-stage pretraining: (1) single-table masked-cell prediction on diverse tabular data, then (2) relational masked-cell prediction across multi-table databases - Griffin's curriculum |
+
+### 7.3 Proposed experiment
+
+Pretrain HGT-FM (the architecture above) on rel-stack using masked-cell completion: mask 15% of cell values at random and predict them. Transfer to rel-trial under three regimes:
+
+1. **Zero-shot** - run the pretrained model directly on rel-trial, no gradient update.
+2. **Full fine-tune** - unfreeze all parameters, train on rel-trial with task labels.
+3. **PEFT fine-tune** - freeze the backbone, train only IA³-style scaling vectors (~0.01% of parameters), following TabLLM.
+
+Vary the label fraction available on rel-trial - `{1%, 5%, 10%, 50%, 100%}` - and compare all three regimes against a from-scratch HGT baseline trained on rel-trial alone at each label fraction. Plot ROC AUC against label fraction for all four curves (scratch, zero-shot, full fine-tune, PEFT).
+
+**What would count as a positive result.** Pretraining is effective if fine-tune or PEFT beats the from-scratch baseline in the low-label regime (<=10% of labels) - the regime where a pretrained prior should matter most and scratch training is starved of data. Zero-shot beating a random baseline at all would be a strong result on its own, given HGT was never trained on rel-trial's schema. The headline finding to look for: PEFT at 10% of rel-trial's labels matching full fine-tuning at 100% - that would mean the pretrained backbone had already learned most of what rel-trial's task needs, and only a small, cheap adaptation is required to specialize it.
 
 ---
 
@@ -526,7 +552,7 @@ We take HGT, one of our heterogeneous models, and describe what must change for 
 
 **Aspect 4 - Depth and oversmoothing.** We tested GCN with and without skip connections across depths 1 through 8 on a fixed 2-hop receptive field. Representational collapse is clearly present and grows with depth; skip connections measurably counteract it, and on rel-stack this now translates into a real downstream gain that grows with depth (up to +0.0093 AUROC at L=8). The muted downstream effect relative to the classic oversmoothing story is attributable to the fixed receptive field (depth adds propagation rounds, not new information) and early stopping.
 
-**Aspect 5 - Foundation models.** Turning HGT into a foundation model requires schema-agnostic input encoders, message passing that generalizes across schemas, a self-supervised pretraining objective, and a transferable head; effectiveness should be tested with a scratch-vs-fine-tune-vs-linear-probe few-shot transfer curve.
+**Aspect 5 - Foundation models.** HGT's core blocker is that its attention weights are indexed per node type and per relation against the source schema, with no way to handle an unfamiliar type or relation at inference time; the fix is to generate those weights from schema text (node/column/relation names) instead of looking them up, following Griffin and Relational Transformers, alongside a schema-agnostic masked-cell pretraining objective and a dual classification/regression decoder. Effectiveness should be tested by pretraining on rel-stack and transferring to rel-trial under zero-shot, full fine-tune, and PEFT (IA³) regimes across a label-fraction sweep, compared against a from-scratch baseline.
 
 ### 8.2 Future work
 
