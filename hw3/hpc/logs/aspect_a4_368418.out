@@ -1,0 +1,16 @@
+================================================
+STRUCTML ASPECT RUN: a4
+================================================
+Job ID: 368418
+Node: lambda1
+Starting at: Fri Jul 10 03:54:21 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /var/spool/slurmd/artifacts
+
+
+================================================
+ASPECT a4 COMPLETE - exit code 2
+Finished at: Fri Jul 10 03:54:24 PM IDT 2026
+================================================

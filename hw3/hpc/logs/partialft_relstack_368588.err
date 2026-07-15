@@ -1,0 +1,20 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 5410.58it/s]
+a3-partial-1:97: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+Traceback (most recent call last):
+  File "/home/zina.assi/struct/structed_ML/hw3/hpc/hpc_partial_finetune.py", line 57, in <module>
+    exec(compile(src[cid], cid, "exec"), g)
+  File "a3-partial-2", line 8, in <module>
+  File "a3-partial-1", line 187, in run_a3_partial_finetune
+  File "a3-partial-1", line 144, in train_a3_partial
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "a3-partial-1", line 118, in forward
+  File "a3-partial-1", line 118, in <dictcomp>
+  File "a3-partial-1", line 110, in embed
+NameError: name 'A3_FT_CHUNK' is not defined

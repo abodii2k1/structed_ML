@@ -1,0 +1,106 @@
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/relbench/modeling/graph.py:93: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:203.)
+  pkey_index = torch.from_numpy(pkey_index[mask].astype(int).values)
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch_frame/data/dataset.py:587: UserWarning: Weights only load failed. Please file an issue to make `torch.load(weights_only=True)` compatible in your case. Please use `torch.serialization.add_safe_globals([scalar])` to allowlist this global.
+  self._tensor_frame, self._col_stats = torch_frame.load(
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights:  21%|██▏       | 22/103 [00:00<00:00, 201.86it/s]Loading weights:  42%|████▏     | 43/103 [00:00<00:00, 185.36it/s]Loading weights:  73%|███████▎  | 75/103 [00:00<00:00, 242.04it/s]Loading weights:  97%|█████████▋| 100/103 [00:00<00:00, 237.79it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 235.02it/s]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights:  10%|▉         | 10/103 [00:00<00:00, 93.65it/s]Loading weights:  32%|███▏      | 33/103 [00:00<00:00, 169.05it/s]Loading weights:  59%|█████▉    | 61/103 [00:00<00:00, 214.35it/s]Loading weights:  83%|████████▎ | 86/103 [00:00<00:00, 219.13it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 228.62it/s]
+a3-partial-1:97: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+Traceback (most recent call last):
+  File "/home/zina.assi/struct/structed_ML/hw3/hpc/hpc_partial_finetune.py", line 57, in <module>
+    exec(compile(src[cid], cid, "exec"), g)
+  File "a3-partial-2", line 8, in <module>
+  File "a3-partial-1", line 179, in run_a3_partial_finetune
+  File "a3-partial-1", line 136, in train_a3_partial
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "a3-partial-1", line 110, in forward
+  File "a3-partial-1", line 110, in <dictcomp>
+  File "a3-partial-1", line 107, in embed
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/sentence_transformers/base/model.py", line 511, in forward
+    input = module(input, **module_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/sentence_transformers/base/modules/transformer.py", line 1096, in forward
+    model_output = model_method(**filtered_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/utils/generic.py", line 1040, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/utils/output_capturing.py", line 252, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 673, in forward
+    encoder_outputs = self.encoder(
+                      ^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 440, in forward
+    hidden_states = layer_module(
+                    ^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/modeling_layers.py", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 387, in forward
+    self_attention_output, _ = self.attention(
+                               ^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 318, in forward
+    attention_output, attn_weights = self.self(
+                                     ^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 196, in forward
+    attn_output, attn_weights = attention_interface(
+                                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/zina.assi/miniconda3/envs/structml/lib/python3.11/site-packages/transformers/integrations/sdpa_attention.py", line 93, in sdpa_attention_forward
+    attn_output = torch.nn.functional.scaled_dot_product_attention(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.40 GiB. GPU 0 has a total capacity of 10.75 GiB of which 985.62 MiB is free. Including non-PyTorch memory, this process has 9.79 GiB memory in use. Of the allocated memory 9.52 GiB is allocated by PyTorch, and 85.68 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

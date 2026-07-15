@@ -1,13 +1,14 @@
 # --- heavy, regenerable caches (rebuild via hw3/hpc prep job or the notebook cells) ---
 hw3/artifacts/graph_cache/
 hw3/artifacts/aspect3_subgraphs/
-hw3/artifacts/graph_cache/rel-trial_glove
+hw3/artifacts/aspect3_subgraphs_large/
+/home/badran.abed/structed_ML/hw3/artifacts/aspect3_subgraphs_large
 # --- old homework byproducts (large, not needed in the repo) ---
 features/
 hw1/features
 hw2/artifacts/
 
-# --- runtime junk ---
+# --- runtime junk ---ssss
 __pycache__/
 .ipynb_checkpoints/
-hw3/hpc/logs/
+

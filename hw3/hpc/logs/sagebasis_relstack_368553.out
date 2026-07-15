@@ -1,0 +1,48 @@
+================================================
+STRUCTML SAGE BASIS SWEEP: rel-stack
+================================================
+Job ID: 368553
+Node: lambda1
+Starting at: Mon Jul 13 01:06:13 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_sage_basis: rel-stack | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell sage-basis-1 =====
+
+===== exec cell sage-basis-2 =====
+
+##### sage-basis sweep: rel-stack #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 22.09 seconds.
+rel-stack: 22 relations | basis sweep: [1, 2, 4, 8, 22]
+  bases=1 seed=42: AUROC 0.8759 | params 2,381,529 | 2552s
+  bases=1 seed=43: AUROC 0.8774 | params 2,381,529 | 2565s
+  bases=1 seed=44: AUROC 0.8723 | params 2,381,529 | 2570s
+  bases=2 seed=42: AUROC 0.8752 | params 2,447,153 | 2227s
+  bases=2 seed=43: AUROC 0.8787 | params 2,447,153 | 2401s
+  bases=2 seed=44: AUROC 0.8801 | params 2,447,153 | 2670s
+  bases=4 seed=42: AUROC 0.8784 | params 2,578,401 | 2677s
+  bases=4 seed=43: AUROC 0.8778 | params 2,578,401 | 2676s
+  bases=4 seed=44: AUROC 0.8755 | params 2,578,401 | 2572s
+  bases=8 seed=42: AUROC 0.8764 | params 2,840,897 | 1966s
+  bases=8 seed=43: AUROC 0.8768 | params 2,840,897 | 2299s
+  bases=8 seed=44: AUROC 0.8732 | params 2,840,897 | 1586s
+  bases=22 seed=42: AUROC 0.8726 | params 3,759,633 | 1778s
+  bases=22 seed=43: AUROC 0.8747 | params 3,759,633 | 2106s
+  bases=22 seed=44: AUROC 0.8712 | params 3,759,633 | 1863s
+
+### DONE: sage-basis sweep for rel-stack
+
+================================================
+SAGE BASIS SWEEP rel-stack COMPLETE - exit code 0
+Finished at: Mon Jul 13 10:48:49 PM IDT 2026
+================================================

@@ -1,0 +1,14 @@
+================================================
+STRUCTML LLM FINE-TUNE: rel-trial
+================================================
+Job ID: 368520
+Node: lambda1
+Starting at: Sun Jul 12 08:23:22 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_finetune_llm: rel-trial | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
