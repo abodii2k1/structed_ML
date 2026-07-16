@@ -235,8 +235,17 @@ This subsection reports a follow-up investigation beyond the assignment's Aspect
 | 28 | - | 0.6844 ± .0080 |
 | 22 / 30 (full, no sharing) | 0.8729 ± .0017 | 0.6868 ± .0050 |
 
-![Aspect 2 supplementary loss curves](artifacts/loss_curves_A2_sage_basis.png)
-*Figure 7: a representative subset of basis counts per dataset (extremes plus the sweet-spot region), mean ± std over 3 seeds, star = restored best epoch.*
+![rel-stack train/val loss, all basis counts](artifacts/loss_curves_A2_sage_basis_relstack_loss.png)
+*Figure 7: rel-stack, train/val loss for every swept basis count, mean over 3 seeds.*
+
+![rel-stack val AUROC, all basis counts](artifacts/loss_curves_A2_sage_basis_relstack_auroc.png)
+*Figure 8: rel-stack, validation AUROC for every swept basis count, mean over 3 seeds, star = restored best epoch.*
+
+![rel-trial train/val loss, all basis counts](artifacts/loss_curves_A2_sage_basis_reltrial_loss.png)
+*Figure 9: rel-trial, train/val loss for every swept basis count, mean over 3 seeds.*
+
+![rel-trial val AUROC, all basis counts](artifacts/loss_curves_A2_sage_basis_reltrial_auroc.png)
+*Figure 10: rel-trial, validation AUROC for every swept basis count, mean over 3 seeds, star = restored best epoch.*
 
 **Convergence.** 51 of 54 (num_bases, seed) runs converged before the epoch cap (21/24 rel-stack, 30/30 rel-trial); the 3 exceptions (rel-stack `num_bases=1` seeds 42 and 43, `num_bases=4` seed 43) were still improving slightly at epoch 30, a minor caveat given rel-stack's own spread across basis counts is only about 0.005. Eval-time neighbor-sampling noise (Section 2) measured at mean |diff| = 0.00003, max = 0.0002 across all 54 runs - consistent with the rest of this report.
 
@@ -257,7 +266,7 @@ In the heterogeneous setting, how does the initial node representation affect do
 ### 5.2 Model Architecture
 
 ![Aspect 3 architecture](artifacts/architecture_A3.png)
-*Figure 8: three swappable input encoders feeding an identical HGT backbone and head. Each encoder consumes a different view of the same row (its index only, its typed cell values, or its serialization to text); all three emit the same 128-d node vector.*
+*Figure 11: three swappable input encoders feeding an identical HGT backbone and head. Each encoder consumes a different view of the same row (its index only, its typed cell values, or its serialization to text); all three emit the same 128-d node vector.*
 
 All three variants share the exact same downstream model: two `HGTConv` layers (`heads=4`) followed by the same two-layer MLP head. Only the block that produces each node's initial 128-dimensional vector changes:
 
@@ -296,7 +305,7 @@ rel-stack and rel-trial, global protocol (Section 2), fan-out [6, 6] on the cach
 | llm | 0.6545 ± .0045 | 0.7489 | 3.23M |
 
 ![Aspect 3 loss curves](artifacts/loss_curves_A3_hpc.png)
-*Figure 9: all three strategies, per-epoch curves, mean ± std over 3 seeds.*
+*Figure 12: all three strategies, per-epoch curves, mean ± std over 3 seeds.*
 
 ### 5.6 Discussion
 
@@ -338,9 +347,9 @@ This subsection reports a follow-up investigation beyond the assignment's Aspect
 | rel-trial | column (reference) | **0.6769 ± .0022** | 0.7386 | 8.77M |
 
 ![Aspect 3 supplementary loss curves](artifacts/loss_curves_A3_llm_family.png)
-*Figure 10: frozen vs. full fine-tune vs. partial fine-tune (k=1, k=2), mean ± std over 3 seeds, star = restored best epoch.*
+*Figure 13: frozen vs. full fine-tune vs. partial fine-tune (k=1, k=2), mean ± std over 3 seeds, star = restored best epoch.*
 
-**Convergence.** All 12 partial-fine-tune runs converged cleanly before the epoch cap (best epochs ranging 5-11, ordinary early stopping, no run still improving at epoch 30) and the officially reported AUROC matched the logged curve value exactly for every run (mean and max |diff| = 0.0). The full fine-tune's overfitting is directly visible in Figure 10: its validation loss (red) drops briefly then rises sharply past its starred best epoch on both datasets, most dramatically on rel-trial, while both partial variants (blue, green) stay flat and stable well past their own best epochs - a visibly different failure mode, not just a different number.
+**Convergence.** All 12 partial-fine-tune runs converged cleanly before the epoch cap (best epochs ranging 5-11, ordinary early stopping, no run still improving at epoch 30) and the officially reported AUROC matched the logged curve value exactly for every run (mean and max |diff| = 0.0). The full fine-tune's overfitting is directly visible in Figure 13: its validation loss (red) drops briefly then rises sharply past its starred best epoch on both datasets, most dramatically on rel-trial, while both partial variants (blue, green) stay flat and stable well past their own best epochs - a visibly different failure mode, not just a different number.
 
 **The diagnosis holds up: partial fine-tuning plus more data beats both frozen and full fine-tuning, on both datasets.** On rel-stack, ordering is frozen (0.7849) < full-finetune (0.8000) < k=1 (0.8238) < k=2 (0.8303) < column (0.8402): k=2 closes 82% of the gap between frozen and column, versus full fine-tuning's 27%. On rel-trial, ordering is full-finetune (0.6388) < frozen (0.6545) < k=2 (0.6665) ≈ k=1 (0.6667) < column (0.6769): partial fine-tuning does not just improve on full fine-tuning, it reverses the regression entirely and closes about 55% of the frozen-to-column gap, while full fine-tuning had moved *away* from column. Restricting how many layers can adapt, combined with enough data that those layers do not just memorize a small repeated sample, is what full fine-tuning was missing on both datasets.
 
@@ -359,7 +368,7 @@ As we add layers, do node representations collapse toward each other (oversmooth
 ### 6.2 Model Architecture
 
 ![Aspect 4 architecture](artifacts/architecture_A4.png)
-*Figure 11: the depth-configurable GCN stack. The arrows carry the data at each step (`h^(0)` after `collapse()`, `h^(l)` between repeated layers, `h^(L)` into the head); the optional skip connection is shown looping the layer input around each `GCNConv`.*
+*Figure 14: the depth-configurable GCN stack. The arrows carry the data at each step (`h^(0)` after `collapse()`, `h^(l)` between repeated layers, `h^(L)` into the head); the optional skip connection is shown looping the layer input around each `GCNConv`.*
 
 A homogeneous operator (GCN was chosen because oversmoothing was first characterized in this model family): the same per-table `HeteroEncoder` as every other aspect, followed by Aspect 2's `collapse()` to merge the typed graph into one node/edge set, then `L` stacked `GCNConv` layers (`L` in `{1,2,3,4,6,8}`), then the same MLP head. Each layer computes `h = relu(conv(h_prev))` in the baseline, or `h = relu(h_prev + conv(h_prev))` in the skip variant - a residual connection carrying the previous layer's representation forward.
 
@@ -402,13 +411,13 @@ Reading the two smoothing columns: `cos_sim` is a mean pairwise cosine similarit
 | 8 | 0.6757 | 0.6811 | 0.616 | 0.686 | 0.201 | 0.348 |
 
 ![Aspect 4 loss curves - depths 1 and 2](artifacts/loss_curves_A4_depths1_2.png)
-*Figure 12: depths 1 and 2, solid = no-skip, dashed = skip.*
+*Figure 15: depths 1 and 2, solid = no-skip, dashed = skip.*
 
 ![Aspect 4 loss curves - depths 3 and 4](artifacts/loss_curves_A4_depths3_4.png)
-*Figure 13: depths 3 and 4, same layout.*
+*Figure 16: depths 3 and 4, same layout.*
 
 ![Aspect 4 loss curves - depths 6 and 8](artifacts/loss_curves_A4_depths6_8.png)
-*Figure 14: depths 6 and 8, same layout - the panel where the skip-vs-no-skip separation is clearest.*
+*Figure 17: depths 6 and 8, same layout - the panel where the skip-vs-no-skip separation is clearest.*
 
 ### 6.6 Discussion
 
