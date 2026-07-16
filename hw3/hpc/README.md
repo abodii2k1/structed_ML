@@ -64,45 +64,6 @@ budget-sensitivity comparison in the report.)
 - `artifacts/loss_curves_A{1,2,3,4}.csv` - per-epoch train loss / val loss / val AUROC
 - `logs/aspect_*.out` - live training prints per job
 
-## Supplementary: fine-tuned LLM encoding for Aspect 3 (2 more independent jobs)
-
-Tests whether Aspect 3's `llm` strategy loses to `column` because serializing a row to
-text loses structure, or because the frozen MiniLM embedding just can't adapt to the
-task. Fine-tunes MiniLM (~22.7M params) end-to-end instead of using the official
-strategy's frozen precomputed embedding. See the `a3-finetune-0` markdown cell in
-`final.ipynb` for the full reasoning and the empirical checks behind the implementation
-(PyG can't slice raw text lists, so text is pre-tokenized into fixed-length tensors
-instead; discriminative LR so fine-tuning doesn't wreck the pretrained weights).
-
-Split by dataset into two standalone jobs, no shared dependency, so two people on two
-different HPC accounts can each run one:
-
-```bash
-# on your account
-sbatch run_finetune_relstack.sh
-
-# on your labmate's account
-sbatch run_finetune_reltrial.sh
-```
-
-Heavier than everything else in this project: MiniLM's transformer now runs a live
-forward+backward pass every mini-batch (vs. a cached lookup + one linear layer for the
-frozen `llm` strategy), so expect this to be noticeably slower per epoch.
-
-Bring the results home the same way:
-
-```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_finetune_results.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_finetune_loss_curves.csv \
-          ~/structed_ML/hw3/artifacts/
-```
-
-Output: `artifacts/aspect3_finetune_results.csv` (one row per seed: AUROC, AUPRC,
-precision, recall, learned params, train time) and
-`artifacts/aspect3_finetune_loss_curves.csv` (per-epoch curves, same format as the
-official aspects) - kept separate from `aspect3_results.csv` since this is a
-supplementary follow-up, not an official strategy.
-
 ## Supplementary: SAGE basis-decomposition sweep for Aspect 2 (2 more independent jobs)
 
 Motivated by the edge-count listing: rel-stack's 11 relations are severely imbalanced
@@ -158,42 +119,63 @@ Output: `artifacts/aspect2_sage_basis_results.csv` (one row per num_bases per se
 `artifacts/aspect2_sage_basis_loss_curves.csv` (per-epoch curves) - kept separate from
 `aspect2_results.csv` since this is a supplementary follow-up, not an official variant.
 
-## Supplementary: partial LLM fine-tune + more data for Aspect 3 (2 more independent jobs)
+## Supplementary: LLM fine-tuning family for Aspect 3 (4 jobs, 2 each for 2 people)
 
-Follow-up to the full-finetune `llm-finetuned` result, which underperformed the frozen
-`llm` strategy on rel-trial (0.6388 vs 0.6545) - likely overfitting, since the official
-shared A3 sample is only 6,000 training seeds (~12 batches/epoch, never hitting the
-500-step cap), so a 30-epoch budget means the 22.7M-parameter fully-unfrozen MiniLM saw
-the same ~12 batches up to 30 times. Tests two changes at once: (1) freeze all but the
-last 1 or 2 MiniLM transformer layers instead of the whole model (verified directly:
-frozen params never get gradient, unfrozen ones always do, zero leakage - `k=1` leaves
-1.77M trainable params, `k=2` leaves 3.55M, both far below the full fine-tune's 22.7M),
-(2) train on a dedicated, separately-cached 30,000/10,000-seed sample instead of the
-official 6,000/2,000 one (does not touch or replace the official A3 subsample - those
-strategies need to stay on the identical fixed sample per the assignment's requirement).
-See the `a3-partial-0` markdown cell in `final.ipynb` for the full reasoning.
+Tests whether Aspect 3's `llm` strategy loses to `column` because serializing a row to
+text loses structure, or because the frozen MiniLM embedding just can't adapt to the
+task - and if adaptation helps, how much of MiniLM needs to be unfrozen. Exactly 3
+experiments per dataset, all on the **identical** dedicated 30,000/10,000-seed sample
+(`a3_build_or_load_large`, separate from the official 6,000/2,000 A3 subsample - does
+not touch or replace it) and the **identical** protocol, so the only thing that changes
+between them is how much of MiniLM can adapt:
 
-Same split-by-dataset pattern as the other supplementary studies:
+- **frozen** - all of MiniLM stays frozen, only a linear projection trains (same
+  architecture as the official `A3Model(..., strategy="llm", ...)`).
+- **k=1** - last 1 MiniLM transformer layer unfrozen (1.77M trainable params).
+- **k=2** - last 2 MiniLM transformer layers unfrozen (3.55M trainable params).
+
+(Freezing verified directly: frozen params never receive a gradient, unfrozen ones
+always do, zero leakage either direction.)
+
+**Protocol note:** early stopping and the final reported metric do not share the same
+validation labels. `a3_loaders_split()` (defined in `aspect3-1`) carves the official
+train pool itself, label-stratified, into train'/val' - val' is used only to pick the
+best checkpoint. The official `val` pool is left untouched during training and
+evaluated exactly once, after the checkpoint is already fixed, to produce the reported
+number. This is **not** applied to the official `id`/`column`/`llm` comparison in
+`aspect3_results.csv`, or to Aspects 1/2/4 - only to these 3 experiments. See the
+`a3-partial-0` / `a3-llm-frozen-large-0` markdown cells in `final.ipynb` for the full
+reasoning.
+
+Split into 4 scripts so two people can each run two (one dataset's frozen job + that
+same dataset's k=1/k=2 job):
 
 ```bash
-# on your account
+# person A, your account
+sbatch run_llmfrozen_large_relstack.sh
 sbatch run_partialfinetune_relstack.sh
 
-# on your labmate's account
+# person B, labmate's account
+sbatch run_llmfrozen_large_reltrial.sh
 sbatch run_partialfinetune_reltrial.sh
 ```
 
-Heavier than the full fine-tune: 5x more training data per epoch, so expect this to
-take noticeably longer per run despite fewer trainable parameters.
+The frozen job is cheap (embedding lookup only, well under a minute per seed once the
+large-sample cache is warm); the k=1/k=2 job is heavier (MiniLM's transformer runs a
+live forward+backward pass every mini-batch on 5x the official sample size), so expect
+it to take noticeably longer.
 
-Bring the results home the same way:
+Bring the results home:
 
 ```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_results.csv \
+rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_llm_frozen_large_results.csv \
+          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_llm_frozen_large_loss_curves.csv \
+          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_results.csv \
           <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_loss_curves.csv \
           ~/structed_ML/hw3/artifacts/
 ```
 
-Output: `artifacts/aspect3_partial_finetune_results.csv` (one row per num_unfrozen per
-seed) and `artifacts/aspect3_partial_finetune_loss_curves.csv` (per-epoch curves) -
-kept separate from both `aspect3_results.csv` and `aspect3_finetune_results.csv`.
+Output: `artifacts/aspect3_llm_frozen_large_results.csv` (one row per seed) and
+`artifacts/aspect3_partial_finetune_results.csv` (one row per num_unfrozen per seed),
+plus matching `..._loss_curves.csv` files for each - kept separate from
+`aspect3_results.csv` since this is a supplementary follow-up, not an official strategy.
