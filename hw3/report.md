@@ -307,40 +307,42 @@ rel-stack and rel-trial, global protocol (Section 2), fan-out [6, 6] on the cach
 
 ### 5.5 Results
 
+Headline metrics are on the **held-out test split** (`task.evaluate`, Section 2); the validation AUROC used for early stopping is shown alongside for reference.
+
 **Table 3a - rel-stack**
 
-| strategy | AUROC | AUPRC | learned params |
-|---|---|---|---|
-| id | 0.7117 ± .0118 | 0.0556 | 25.57M |
-| column | **0.8402 ± .0064** | 0.1772 | 3.60M |
-| llm | 0.7849 ± .0031 | 0.1531 | 1.65M |
+| strategy | test AUROC | test AUPRC | val AUROC | learned params |
+|---|---|---|---|---|
+| id | 0.7543 ± .0025 | 0.108 | 0.7576 ± .0077 | 182.83M |
+| column | **0.8518 ± .0035** | 0.196 | **0.8530 ± .0055** | 3.60M |
+| llm | 0.8274 ± .0044 | 0.168 | 0.8170 ± .0036 | 1.65M |
 
 ---
 
 **Table 3b - rel-trial**
 
-| strategy | AUROC | AUPRC | learned params |
-|---|---|---|---|
-| id | 0.5145 ± .0328 | 0.5889 | 18.40M |
-| column | **0.6769 ± .0022** | 0.7386 | 8.77M |
-| llm | 0.6545 ± .0045 | 0.7489 | 3.23M |
+| strategy | test AUROC | test AUPRC | val AUROC | learned params |
+|---|---|---|---|---|
+| id | 0.5097 ± .0058 | 0.593 | 0.5208 ± .0098 | 34.05M |
+| column | **0.6984 ± .0130** | 0.760 | **0.6748 ± .0046** | 8.77M |
+| llm | 0.6696 ± .0056 | 0.743 | 0.6670 ± .0012 | 3.23M |
 
-![Aspect 3 loss curves](artifacts/loss_curves_A3_hpc.png)
-*Figure 12: all three strategies, per-epoch curves, mean ± std over 3 seeds.*
+![Aspect 3 loss curves](artifacts/loss_curves_A3.png)
+*Figure 12: all three strategies, per-epoch train loss / validation loss / validation AUROC, mean ± std over 3 seeds, star = restored best epoch. `id` (red) shows a textbook overfitting signature - training loss collapses toward zero while validation loss climbs and validation AUROC peaks within the first few epochs then declines - whereas `column` and `llm` converge cleanly.*
 
 ### 5.6 Discussion
 
-**The ordering is clean and consistent: column > llm > id on both datasets.** Typed column encoders carry the most signal because they preserve numeric precision and categorical structure directly; id and llm both discard or reshape that structure in different ways.
+**The ordering is clean and consistent: column > llm > id on both datasets, on held-out test.** Typed column encoders carry the most signal because they preserve numeric precision and categorical structure directly; id and llm both discard or reshape that structure in different ways.
 
-**Why does id have by far the most parameters (18-26M - 2.1x-7.1x column's and 5.7x-15.5x llm's, depending on dataset) yet the worst performance?** Its parameter count is an embedding table sized to the number of nodes in the sampled subgraph, not to the schema - about 95% of those parameters are raw per-node lookup slots that encode "which specific node this is," not any pattern transferable to a node the model has not seen trained. On rel-stack it still reaches 0.7117, meaning a user's 2-hop neighborhood carries real engagement signal even with zero cell values; on rel-trial it is close to chance (0.5145) because a validation study's own embedding was likely never updated during training, and pure connectivity carries little outcome signal there. This is a direct illustration of the point in Section 4's discussion generalized further: raw parameter count is not capacity in any useful sense when those parameters cannot transfer to unseen entities.
+**Why does id have by far the most parameters (34M-183M - 4x-51x column's and 11x-111x llm's, depending on dataset) yet the worst performance?** Its parameter count is an embedding table sized to the number of nodes in the sampled subgraph (about 1.43M nodes on rel-stack, 266K on rel-trial), not to the schema - well over 90% of those parameters are raw per-node lookup slots that encode "which specific node this is," not any pattern transferable to a node the model has not seen trained. The two datasets make the transductive weakness concrete, and we can now say exactly why they differ: **on rel-stack, 94.8% of test entities also appear in the training table** (the same users recur across time windows), so most test nodes' embeddings *were* trained, and id reaches a real 0.7543 test AUROC - a user's 2-hop neighborhood carries genuine engagement signal even with zero cell values. **On rel-trial, that overlap is 0.0%** - no study ever appears in more than one split - so every test study's embedding sits at its random initialization, and id lands at 0.5097, statistically indistinguishable from chance. This is a direct, measured illustration of the point generalized from Section 4: raw parameter count is not capacity in any useful sense when those parameters cannot transfer to unseen entities.
 
-id's rel-trial AUPRC (0.5889) looks like a separate anomaly next to its near-chance AUROC (0.5145) - column and llm's AUPRC (0.7386, 0.7489) are much closer to their own AUROC in relative terms - but it is not: AUROC's chance floor is always 0.5 regardless of class balance, while AUPRC's chance floor is the positive-class prevalence. rel-trial's validation split is 58.44% positive (Section 5.3), and id's measured AUPRC (0.5889) sits within 0.0045 of that 0.5844 prevalence - almost exactly where a ranking with no real signal would land. Both numbers are telling the same story (id is barely better than random on rel-trial), just against each metric's own baseline.
+id's rel-trial test AUPRC (0.593) looks like a separate anomaly next to its chance-level AUROC (0.5097) - column and llm's AUPRC (0.760, 0.743) sit much closer to their own AUROC in relative terms - but it is not: AUROC's chance floor is always 0.5 regardless of class balance, while AUPRC's chance floor is the positive-class prevalence. rel-trial's test split is 58.55% positive, and id's measured AUPRC (0.593) sits within 0.008 of that prevalence - almost exactly where a ranking with no real signal would land. Both numbers tell the same story (id is barely better than random on rel-trial), just against each metric's own baseline.
 
-The 25.57M/18.40M parameter count is wasteful in that sense, but not in wall-clock terms: `id`'s best epoch lands at epoch 2-3 on rel-stack and 2-5 on rel-trial, and training stops entirely by epoch 8-11 once patience runs out - both datasets' validation AUROC is already declining by epoch 5, not merely plateaued. Measured training time confirms this: `id` is the *cheapest* of the three strategies to train (12.7s/33.4s mean per run on rel-stack/rel-trial), against column's 30.6s/60.4s and llm's 19.9s/68.5s - despite owning 5-16x more parameters than either. Early stopping catches the collapse quickly enough that the large embedding table costs comparatively little compute, even though it is trained pointlessly.
+The 183M/34M parameter table is wasteful in that sense, but not in wall-clock terms: `id`'s best epoch lands at epoch 1-2 on rel-stack and 3-5 on rel-trial, and training stops by epoch 7-11 once patience runs out - validation AUROC is already declining (and validation loss climbing sharply) within the first few epochs, the overfitting signature visible directly in Figure 12. Measured training time confirms this: `id` is the *cheapest* of the three strategies to train (65.6s/73.6s mean per run on rel-stack/rel-trial), against column's 142.9s/120.4s and llm's 92.8s/106.9s - despite owning 20x-50x more parameters. Early stopping catches the collapse quickly enough that the enormous embedding table costs comparatively little compute, even though it is trained pointlessly.
 
-**Limitation.** This "we're fine on compute" conclusion is protocol-dependent, not a general property of `id`: it holds here specifically because patience is short (6 epochs) and tuned for this project's other strategies, and because validation AUROC happens to peak and decline within the first few epochs on both datasets. A task where `id` overfits more slowly, or a patience setting tuned differently, would not get this same free pass. It is also a wall-clock argument only - the 18-26M-parameter embedding table is still allocated in memory for the full run regardless of how few epochs it trains for, and at true production scale (a graph with hundreds of millions of nodes rather than the ~189K in our cached subgraph) that memory footprint, not training time, would be the binding constraint.
+**Limitation.** This "we're fine on compute" conclusion is protocol-dependent, not a general property of `id`: it holds here specifically because patience is short (6 epochs) and because validation AUROC happens to peak and decline within the first few epochs on both datasets. A task where `id` overfits more slowly, or a patience setting tuned differently, would not get this free pass. It is also a wall-clock argument only - the 34M-183M-parameter embedding table is still allocated in memory (and, being a dense `nn.Embedding`, re-materialized in the gradient every backward pass) for the full run regardless of how few epochs it trains for, making `id` the most memory-hungry strategy here despite learning the least transferable thing. At true production scale (hundreds of millions of nodes rather than the ~1.4M in our largest cached subgraph) that footprint, not training time, would be the binding constraint - matching PyG's own characterization of shallow node embeddings as `O(|V|·d)` and "hard-to-scale."
 
-**Why does llm not beat column despite having a strong pretrained encoder behind it?** Two compounding reasons. First, serializing a row into one string flattens numeric and categorical structure into text tokens, discarding exactly the structure column-wise encoding preserves directly. Second, MiniLM is frozen; only a linear projection is learned on top, giving llm the fewest learned parameters of the three strategies (1.65M / 3.23M) and correspondingly the least room to adapt to the task. llm's margin over id does grow from rel-stack (+0.073) to text-heavy rel-trial (+0.140), confirming language-model embeddings do capture textual signal where it exists - just not enough to close the gap to typed encoding.
+**Why does llm not beat column despite having a strong pretrained encoder behind it?** Two compounding reasons. First, serializing a row into one string flattens numeric and categorical structure into text tokens, discarding exactly the structure column-wise encoding preserves directly. Second, MiniLM is frozen; only a linear projection is learned on top, giving llm the fewest learned parameters of the three strategies (1.65M / 3.23M) and correspondingly the least room to adapt to the task. llm's margin over id does grow from rel-stack (+0.073 test AUROC) to text-heavy rel-trial (+0.160), confirming language-model embeddings do capture textual signal where it exists - just not enough to close the gap to typed encoding.
 
 **Usability.** id is trivial to implement (an embedding table) but not transferable to new entities; column-wise needs `torch_frame` and typed-column metadata; llm needs `sentence-transformers` plus a row-serialization and embedding pipeline, the heaviest one-off preprocessing cost of the three despite its light final parameter count.
 
