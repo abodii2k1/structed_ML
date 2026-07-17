@@ -1,0 +1,6 @@
+# Keep scripts LF. sbatch itself tolerates CRLF (our CRLF scripts ran fine on the
+# cluster), but `bash -n` and running a script directly instead of through sbatch both
+# fail on it with "syntax error: unexpected end of file", since "fi\r" is not "fi".
+# Pinning to LF keeps them lintable and runnable either way.
+*.sh text eol=lf
+*.py text eol=lf
