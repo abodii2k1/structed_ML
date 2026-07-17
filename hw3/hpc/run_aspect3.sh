@@ -5,7 +5,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=96G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 
 # Aspect 3 official: id / column / llm x 2 datasets x 3 seeds, on the unified
 # 30,000/10,000/20,000 sample, reported on the held-out test split via task.evaluate().

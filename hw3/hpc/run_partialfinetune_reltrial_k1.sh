@@ -5,7 +5,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=96G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 
 # Aspect 3 supplementary: partial MiniLM fine-tune (last 1 layer unfrozen) for rel-trial,
 # 3 seeds = 3 runs (~5h measured - rel-trial's sample is capped at all 11,994 train rows,
