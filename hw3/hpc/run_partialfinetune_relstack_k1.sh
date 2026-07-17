@@ -2,23 +2,19 @@
 #SBATCH --job-name=structml_partialft_relstack_k1
 #SBATCH --output=logs/partialft_relstack_k1_%j.out
 #SBATCH --error=logs/partialft_relstack_k1_%j.err
-#SBATCH --time=24:00:00
+#SBATCH --time=30:00:00
 #SBATCH --gres=gpu:1
-#SBATCH --mem=64G
-#SBATCH --cpus-per-task=2
+#SBATCH --mem=96G
+#SBATCH --cpus-per-task=4
 
-# Aspect 3 follow-up: partial MiniLM fine-tune, num_unfrozen=1 only, on a dedicated
-# 30,000/10,000-seed sample for rel-stack, 3 seeds = 3 runs (~21h, fits one 24h job).
-# Standalone: no dependency on prep or any other job. Builds its own (separate, larger)
-# A3 subgraph cache on first run - shared with the other k value for this dataset, so
-# whichever of run_partialfinetune_relstack_k1.sh / _k2.sh runs first builds the cache and
-# the other reuses it (both must run on the SAME account/filesystem to share the cache;
-# if splitting k1/k2 across two accounts, each side builds its own cache once).
-# Run this on your own HPC account with:
-#   sbatch run_partialfinetune_relstack_k1.sh
-# (Split across HPC accounts however works best: by dataset - relstack vs reltrial via
-# run_partialfinetune_relstack.sh / run_partialfinetune_reltrial.sh - or by unfreeze-config
-# within a dataset via this k1/k2 pair - or both, across up to 4 accounts.)
+# Aspect 3 supplementary: partial MiniLM fine-tune (last 1 layer unfrozen) for rel-stack,
+# 3 seeds = 3 runs (~19.8h measured). Runs on the SAME unified 30,000/10,000/20,000 sample
+# and the SAME protocol as id/column/llm, reported on the held-out test split via
+# task.evaluate() - so the only thing that differs from frozen `llm` is the adaptation.
+#
+# Needs the unified A3 subgraph cache. Submit via submit_person_a.sh, which runs
+# run_aspect3.sh first and makes this wait for it - launching this and the rel-trial k=1
+# job before the cache exists would have them race to build the same thing.
 
 CONDA_ENV=${CONDA_ENV:-structml}
 
