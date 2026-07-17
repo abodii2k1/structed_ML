@@ -1,14 +1,16 @@
 """Run the partial LLM fine-tune (k=1, k=2) Aspect 3 follow-up on the HPC by executing
 the ACTUAL notebook cells (single source of truth - no code duplication with final.ipynb).
 
-Two of the three experiments in the LLM fine-tuning family (the third, frozen, is
-`hpc_llm_frozen_large.py`): freeze all but the last 1 or 2 MiniLM transformer layers,
-trained on a dedicated 30,000/10,000-seed sample (separate from the official shared
-6,000/2,000 A3 sample) using a genuine train'/val'/test protocol (`a3_loaders_split()` -
-early stopping never sees the same labels used for the final reported metric). See the
-`a3-partial-0` markdown cell in final.ipynb for the full reasoning and the empirical
-checks behind it (verified the freezing mechanism directly: frozen params never get
-gradient, unfrozen ones always do, zero leakage either direction).
+Two of five experiments in a 5-way Aspect 3 strategy comparison (the other three -
+id/column/llm frozen - are `hpc_a3_large_sample.py`): freeze all but the last 1 or 2
+MiniLM transformer layers, trained on a dedicated 30,000/10,000-seed sample (separate
+from the official shared 6,000/2,000 A3 sample). Same protocol as every other result in
+this project (early stopping and the final reported metric both from the official val
+split) - not a genuine held-out test; see the report's Limitations section for why this
+was disclosed rather than fixed, given time constraints. See the `a3-partial-0`
+markdown cell in final.ipynb for the full reasoning and the empirical checks behind it
+(verified the freezing mechanism directly: frozen params never get gradient, unfrozen
+ones always do, zero leakage either direction).
 
 Usage:
     python hpc_partial_finetune.py rel-stack           # both num_unfrozen configs (1 and 2)

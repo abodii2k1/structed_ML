@@ -56,7 +56,21 @@ rel-stack has on the order of four million nodes, so full-graph training does no
 
 ### Evaluation measures
 
-For every experiment we report ROC AUC, AUPRC, precision, and recall. Precision and recall require a decision threshold, so we choose the threshold that maximizes F1 on the validation set. Because RelBench hides the test labels, every metric is reported on the validation split using that best-F1 threshold. This introduces a mild optimistic bias for precision and recall, but it is identical across variants, so it does not affect comparisons.
+**Every headline number in this report is measured on a held-out test split that is touched exactly once**, after the model is fully trained and its checkpoint already chosen. The three splits do strictly separate jobs:
+
+| split | what it decides | how often it is looked at |
+|---|---|---|
+| train | the weights (gradient updates) | every step |
+| val | which epoch's checkpoint to keep (early stopping) | once per epoch |
+| **test** | **nothing** - it only reports the final score | **once, after everything is fixed** |
+
+RelBench masks the test target column by default (`get_table("test")` returns input columns only), so no test label is readable from our code by construction. `EntityTask.evaluate(pred)` loads the real labels internally, scores our predictions against them, and returns the metrics without ever exposing the labels. All three splits are temporal: on rel-stack, train ends 2020-07-02, val is 2020-10-01, test is 2021-01-01 (rel-trial: 2019-01-01 / 2020-01-01 / 2021-01-01), so a test score is always a genuine forecast of a later window.
+
+This matters because using validation for *both* checkpoint selection and reporting is a real form of selection leakage: the reported score would belong to whichever of ~30 candidate checkpoints happened to fit that particular validation set best, which is optimistic by construction and cannot be separated from genuine improvement from inside the run. An earlier version of this study did exactly that; every number here has been re-measured under the protocol above.
+
+We report ROC AUC and AUPRC (RelBench's own metrics, via `task.evaluate`) plus precision and recall at the threshold that maximizes F1 **on validation** - the threshold is a fitted quantity, so it is chosen on the selection split, never on test. One caveat when comparing against RelBench directly: its built-in `f1`/`accuracy` use a hardcoded 0.5 cut rather than a tuned threshold, so those two are not comparable to our precision/recall columns.
+
+*Verification.* Because `task.evaluate` matches predictions to labels **positionally**, a misordered test loader would silently produce plausible-looking scores near chance rather than an error. We proved order alignment with an oracle model that emits each seed's own entity id instead of a prediction: every returned value matched the test table's entity-id column exactly.
 
 One additional methodological note we uncovered while auditing convergence: because `NeighborLoader`'s neighbor subsampling is not seeded at evaluation time (a node with more neighbors than the configured fan-out gets a random subset each call), two evaluations of the *same* restored checkpoint can differ slightly. We measured this directly by comparing each run's officially reported AUROC against the value logged for that same epoch during training: the discrepancy is negligible for Aspects 1-2 (mean |diff| ≈ 0.00003-0.00009, max ≈ 0.0005) and larger but still small for Aspect 4 (mean ≈ 0.0006, max ≈ 0.0046), where the fan-out (10) is tightest relative to real node degree. Aspect 3 shows zero discrepancy, because its cached subgraph rarely has any node exceeding its fan-out cap, so there is nothing to subsample. This noise is well below the effect sizes we report as real findings, but small gaps of a few thousandths in AUROC anywhere in this report should be read with this in mind.
 
@@ -274,11 +288,18 @@ All three variants share the exact same downstream model: two `HGTConv` layers (
 - **column:** the shared `HeteroEncoder` used everywhere else in this project (torch_frame typed-column encoders).
 - **llm:** each row is serialized to a string (`"col1=v1, col2=v2, ..."`), embedded once with frozen sentence-transformers MiniLM (`all-MiniLM-L6-v2`, 384-d), and a learned per-type `Linear(384, 128)` projects it down; MiniLM itself is never fine-tuned.
 
-Picking up from Section 2's shared steps 1-2: a fixed, cached subsample is drawn **once** per dataset (6000 train seeds; validation requested at 2000 but capped by each dataset's actual validation-table size - rel-stack reaches 2000, rel-trial caps at 960) with 2-hop `[6,6]`-fanout neighborhoods, reused identically by all three strategies and all seeds (step 3). Exactly one of three encoders is then active per run (step 4): `id` looks up a pure per-node embedding from the node's index alone, ignoring every cell value; `column` uses the same `HeteroEncoder` as every other aspect; `llm` serializes each row to text, embeds it once with frozen MiniLM, and projects it down with a learned linear layer. Steps 5-8 (two `HGTConv` layers, taking the seed rows, and the MLP head) are bit-for-bit identical across all three strategies, so any performance difference is attributable to the initial node representation alone.
+Picking up from Section 2's shared steps 1-2: a fixed, cached sample is drawn **once** per dataset and reused identically by every strategy and every seed (step 3). Because embedding a whole database with MiniLM is infeasible, Aspect 3 is the one aspect that runs on a sampled subgraph rather than the full graph; sizes are requests, capped by what each split actually holds:
+
+| | train | val | test |
+|---|---|---|---|
+| rel-stack | 30,000 | 10,000 | 20,000 |
+| rel-trial | 11,994 *(capped: all of train)* | 960 *(all)* | 825 *(all)* |
+
+Train and validation seeds are label-stratified, preserving each split's positive rate. **Test seeds are sampled uniformly at random, not stratified** - stratifying would mean choosing which test rows to be scored on by inspecting their labels. Neighborhoods are 2-hop with `[6,6]` fan-out. Exactly one of three encoders is then active per run (step 4): `id` looks up a pure per-node embedding from the node's index alone, ignoring every cell value; `column` uses the same `HeteroEncoder` as every other aspect; `llm` serializes each row to text, embeds it once with frozen MiniLM, and projects it down with a learned linear layer. Steps 5-8 (two `HGTConv` layers, taking the seed rows, and the MLP head) are bit-for-bit identical across all three strategies, so any performance difference is attributable to the initial node representation alone.
 
 ### 5.3 Comparison Design
 
-Fixed cached subsample, fan-out, and MiniLM embeddings precomputed once (Section 5.2) - identical for all three strategies, which is both the assignment's requirement and what makes `id`'s transductive weakness a fair test rather than a sampling artifact: every strategy sees the same validation entities.
+Fixed cached sample, fan-out, and MiniLM embeddings precomputed once (Section 5.2) - identical for every strategy, which is both the assignment's requirement and what makes `id`'s transductive weakness a fair test rather than a sampling artifact: every strategy sees exactly the same entities. One sample also serves the fine-tuning follow-up (Section 5.7), so `llm` and `llm-partial` differ only in whether the encoder is allowed to adapt, not in what data they see.
 
 ### 5.4 Experimental Setup
 
@@ -483,7 +504,7 @@ Vary the label fraction available on rel-trial - `{1%, 5%, 10%, 50%, 100%}` - an
 
 ### 8.2 Future work
 
-The main limitations are that all reported metrics are on the validation split because RelBench hides test labels, with the precision/recall threshold tuned on that same split; the depth study uses a fixed 2-hop subgraph rather than a growing receptive field; only two datasets are used; and only Aspect 2 includes a parameter-matched control. Good follow-ups would be a growing-receptive-field oversmoothing study on larger hardware, parameter-matched controls for Aspects 1, 3, and 4, fine-tuned rather than frozen LLM encoders, and additional RelBench tasks to test generality.
+The main limitations are that all reported metrics reuse the validation split for both early-stopping checkpoint selection and the final reported number (Section 2), rather than a genuine held-out test - RelBench's `EntityTask.evaluate()` provides exactly this against real, internally-unmasked test labels, and adopting it project-wide is the most direct next step, not a research question; the depth study uses a fixed 2-hop subgraph rather than a growing receptive field; only two datasets are used; and only Aspect 2 includes a parameter-matched control. Good follow-ups would be re-scoring every result with `task.evaluate()` for a genuinely unbiased comparison, a growing-receptive-field oversmoothing study on larger hardware, parameter-matched controls for Aspects 1, 3, and 4, fine-tuned rather than frozen LLM encoders, and additional RelBench tasks to test generality.
 
 ### 8.3 AI usage
 
