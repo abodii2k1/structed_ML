@@ -1,0 +1,47 @@
+================================================
+STRUCTML FROZEN LLM BASELINE (large sample): rel-stack
+================================================
+Job ID: 368694
+Node: lambda4
+Starting at: Fri Jul 17 02:20:51 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_llm_frozen_large: rel-stack | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell a3-partial-1 =====
+
+===== exec cell a3-llm-frozen-large-1 =====
+
+===== exec cell a3-llm-frozen-large-2 =====
+
+##### llm-frozen (large sample): rel-stack #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 16.80 seconds.
+    embedded postLinks: 29427 rows
+    embedded postHistory: 290716 rows
+    embedded posts: 160649 rows
+    embedded users: 40000 rows
+    embedded comments: 163934 rows
+    embedded votes: 154484 rows
+    embedded badges: 111108 rows
+  [split] train'=24000 val'=6000 (carved from official train pool n=30000) | held-out test=10000 (official val pool, untouched)
+  seed 42: AUROC 0.8046 | params 1,646,911 | 61s
+  seed 43: AUROC 0.8043 | params 1,646,911 | 62s
+  seed 44: AUROC 0.8080 | params 1,646,911 | 62s
+
+### DONE: frozen llm baseline (large sample) for rel-stack
+
+================================================
+FROZEN LLM BASELINE (large sample) rel-stack COMPLETE - exit code 0
+Finished at: Fri Jul 17 02:53:02 PM IDT 2026
+================================================

@@ -1,0 +1,29 @@
+================================================
+STRUCTML ASPECT 3 (id/column/llm, held-out test)
+================================================
+Job ID: 368744
+Node: lambda4
+Starting at: Fri Jul 17 04:22:49 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a3 | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell aspect3-2 =====
+
+##### rel-stack / user-engagement #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 10.13 seconds.
+  [rel-stack] train n=30000 pos=1500 (0.0500) | val n=10000 pos=281 (0.0281) | test n=20000 (labels masked)
+    subgraph nodes: 1,418,209
+    embedded+tokenized postLinks: 44972 rows

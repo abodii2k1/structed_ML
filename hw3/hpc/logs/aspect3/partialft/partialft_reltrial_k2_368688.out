@@ -1,0 +1,14 @@
+================================================
+STRUCTML PARTIAL LLM FINE-TUNE: rel-trial (k=2)
+================================================
+Job ID: 368688
+Node: lambda4
+Starting at: Thu Jul 16 04:57:19 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_partial_finetune: rel-trial | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
