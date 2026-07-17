@@ -1,0 +1,8 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights:  25%|██▌       | 26/103 [00:00<00:00, 237.96it/s]Loading weights:  49%|████▊     | 50/103 [00:00<00:00, 233.19it/s]Loading weights:  72%|███████▏  | 74/103 [00:00<00:00, 223.25it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 245.90it/s]
+a3-partial-1:135: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 4169.89it/s]
+a3-partial-1:135: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 4259.31it/s]
+a3-partial-1:135: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
