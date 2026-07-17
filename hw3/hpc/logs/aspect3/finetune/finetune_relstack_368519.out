@@ -1,0 +1,30 @@
+================================================
+STRUCTML LLM FINE-TUNE: rel-stack
+================================================
+Job ID: 368519
+Node: lambda1
+Starting at: Sun Jul 12 08:21:28 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_finetune_llm: rel-stack | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell a3-finetune-1 =====
+
+===== exec cell a3-finetune-2 =====
+
+##### llm-finetuned: rel-stack #####
+
+================================================
+LLM FINE-TUNE rel-stack COMPLETE - exit code 1
+Finished at: Sun Jul 12 08:23:22 PM IDT 2026
+================================================

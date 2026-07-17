@@ -1,0 +1,42 @@
+================================================
+STRUCTML PARTIAL LLM FINE-TUNE: rel-stack
+================================================
+Job ID: 368585
+Node: lambda1
+Starting at: Mon Jul 13 09:37:16 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_partial_finetune: rel-stack | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell a3-finetune-1 =====
+
+===== exec cell a3-partial-1 =====
+
+===== exec cell a3-partial-2 =====
+
+##### llm-partial-finetune (more data): rel-stack #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-stack/db...
+Done in 27.95 seconds.
+  [rel-stack] LARGE train n=30000 pos-rate=0.0500 | val n=10000 pos-rate=0.0281
+    tokenized postLinks: 29411 rows
+    tokenized postHistory: 290758 rows
+    tokenized posts: 160671 rows
+    tokenized users: 40000 rows
+    tokenized comments: 163951 rows
+    tokenized votes: 154443 rows
+    tokenized badges: 111108 rows
+
+================================================
+PARTIAL LLM FINE-TUNE rel-stack COMPLETE - exit code 1
+Finished at: Mon Jul 13 10:08:54 PM IDT 2026
+================================================

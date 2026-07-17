@@ -1,16 +1,58 @@
-# Running the converged-protocol rerun on the HPC
+# Running the held-out-test rerun on the HPC
 
-What this runs: every official experiment of all 4 aspects at the converged
-protocol - **30 epochs max, early stopping patience 6, 3 seeds (42/43/44) on both
-datasets, per-epoch loss curves logged** (Aspect 4 additionally: 1000 steps/epoch).
-The scripts execute the actual notebook cells (`final.ipynb` is the single source
-of truth), so what runs on the cluster is byte-identical to the notebook.
+What this runs: **every experiment in the project, re-run under a proper three-way split** -
+train on `train`, select the checkpoint on `val` (early stopping), then score that checkpoint
+**once** on RelBench's real held-out `test` split via `task.evaluate()`.
+
+Protocol, identical everywhere: **30 epochs max, early stopping patience 6, 3 seeds
+(42/43/44), both datasets, per-epoch loss curves logged** (Aspect 4 additionally caps
+1000 steps/epoch). The scripts execute the actual notebook cells (`final.ipynb` is the
+single source of truth), so what runs on the cluster is byte-identical to the notebook.
+
+## Why the rerun
+
+The previous protocol used the same validation split twice: once to pick the best epoch
+(early stopping) and again as the reported number. That is selection leakage - the reported
+score belongs to whichever checkpoint happened to fit that particular validation set best,
+so it is optimistically biased.
+
+RelBench masks the test target column by default (`get_table("test")` returns input columns
+only), but `EntityTask.evaluate(pred)` loads the real labels internally and scores against
+them without ever exposing them. That gives a genuinely once-touched test number, and it
+needs no data sacrificed from train.
+
+Two things were verified before committing to this (see `final.ipynb`):
+- the test labels really are present and complete (825 rel-trial / 88,137 rel-stack rows, zero nulls);
+- **order alignment** - `task.evaluate()` matches `pred[i]` to `target[i]` positionally, so the
+  test loader must yield seeds in test-table row order. Proven with an oracle model that emits
+  each seed's own entity id: all 825 rel-trial positions came back exactly equal. A silent
+  misalignment here would have produced plausible-looking ~0.5 AUROCs that were pure garbage.
+
+## What changed in Aspect 3
+
+Aspect 3 now uses **one unified sample per dataset** for every variant (`id`, `column`, `llm`,
+`llm-partial`), so the only thing that differs between them is the strategy:
+
+| | train | val | test |
+|---|---|---|---|
+| rel-stack | 30,000 | 10,000 | 20,000 |
+| rel-trial | 11,994 *(capped: all of train)* | 960 *(all)* | 825 *(all)* |
+
+- train/val are label-stratified; **test is sampled uniformly** - stratifying it would mean
+  choosing which test rows to be scored on by looking at their labels.
+- This also fixes a real weakness: the old 2,000-seed val had only **56 positives** on
+  rel-stack, and since all 3 seeds shared that same fixed subsample, the reported +/- std
+  measured only training randomness and not sampling noise at all. The new val has ~281.
+- The cache (`artifacts/aspect3_subgraphs_v2/`) carries column TensorFrames + frozen MiniLM
+  embeddings + tokenized text for every node, so it is several GB per dataset. Tokens are
+  stored narrow (int32 ids / int8 masks, cast back to long at use) - at this size that is a
+  multi-GB saving.
 
 ## 1. Send the code (and optionally the caches) to the server
 
 ```bash
-# code + small artifacts (~400 MB, includes the A3 subgraphs)
-rsync -av --progress --exclude 'artifacts/graph_cache' \
+# code + small artifacts
+rsync -av --progress --exclude 'artifacts/graph_cache' --exclude 'artifacts/aspect3_subgraphs*' \
     ~/structed_ML/hw3 <user>@<server>:~/structed_ML/
 
 # OPTIONAL but recommended - the prebuilt graph caches (~12 GB).
@@ -26,156 +68,81 @@ cd ~/structed_ML/hw3/hpc
 bash setup_env.sh          # creates conda env "structml"
 ```
 
-## 3. Submit everything
+## 3. Submit - split across two accounts
+
+The work splits so that **the expensive Aspect 3 subgraph cache is built on one account only**.
+Person B's jobs stream from the plain graph cache and never touch it.
 
 ```bash
-cd ~/structed_ML/hw3/hpc
-bash submit_all.sh
+# Person A  (~26 GPU-h, ~20 h wall-clock)
+bash submit_person_a.sh
+
+# Person B  (~31 GPU-h, ~12 h wall-clock)
+bash submit_person_b.sh
 ```
 
-This submits: `prep` (data download + cache build, skipped if caches present),
-then `a1 a2 a3 a4` in parallel once prep succeeds.
+| | job | what | est. time |
+|---|---|---|---|
+| **A** | a3 | id/column/llm x 2 datasets x 3 seeds (**builds the A3 cache**) | ~1-2 h + build |
+| **A** | k=1 rel-stack | partial fine-tune, last MiniLM layer | ~19.8 h |
+| **A** | k=1 rel-trial | partial fine-tune, last MiniLM layer | ~5 h |
+| **B** | prep | datasets + graph caches (skips the A3 cache) | ~2 min cached / 1-3 h fresh |
+| **B** | a1 | 6 directionality variants x 2 x 3 | ~7.5 h |
+| **B** | a2 | 4 homo/hetero variants x 2 x 3 + param control | ~6 h |
+| **B** | a4 | 12 depth/skip settings x 2 x 3 | ~11.5 h |
+| **B** | basis rel-stack | num_bases {8, 12, 16} x 3 seeds | ~5.7 h |
+| **B** | basis rel-trial | num_bases {12, 16, 20} x 3 seeds | ~0.1 h |
 
-| job | what | est. time |
-|---|---|---|
-| prep | datasets, graph caches, A3 subgraphs | ~2 min cached / 1-3 h fresh |
-| a1 | 6 directionality variants x 2 datasets x 3 seeds | 5-10 h |
-| a2 | 4 homo/hetero variants x 2 x 3 + param-matched control | 4-8 h |
-| a3 | id/column/llm x 2 x 3 | ~1 h |
-| a4 | 12 depth/skip settings x 2 x 3 | 8-15 h |
+On A, the two k=1 jobs wait on `a3` (`--dependency=afterok`) because all three need the same
+A3 cache - launching them together would race to build it. On B, everything runs in parallel
+after prep.
 
-Everything is resumable - if a job dies or hits walltime, resubmit the same
-aspect: `sbatch --job-name=a4 run_single_aspect.sh a4`. Finished runs are skipped.
+The basis sweep is restricted to the region that answers the question: rel-stack's relations
+are severely imbalanced in edge count (232x between largest and smallest), which is the
+fragmentation being tested, so it keeps the mid-range where the full-vs-shared transition
+happens; rel-trial's are comparatively balanced (~10x, no severe outlier), so only the top of
+its range is worth confirming.
+
+Everything is resumable - if a job dies or hits walltime, resubmit it; finished runs are
+skipped.
 
 ## 4. Bring the results home
 
 ```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect*_results.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/loss_curves_A*.csv \
+# from person A
+rsync -av <server>:~/structed_ML/hw3/artifacts/aspect3_results.csv \
+          <server>:~/structed_ML/hw3/artifacts/loss_curves_A3.csv \
+          <server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_*.csv \
+          ~/structed_ML/hw3/artifacts/
+
+# from person B
+rsync -av <server>:~/structed_ML/hw3/artifacts/aspect{1,2,4}_results.csv \
+          <server>:~/structed_ML/hw3/artifacts/loss_curves_A{1,2,4}.csv \
+          <server>:~/structed_ML/hw3/artifacts/aspect2_sage_basis_*.csv \
           ~/structed_ML/hw3/artifacts/
 ```
 
-(The old 10-epoch results stay archived locally as `artifacts/*_10ep.csv` for the
-budget-sensitivity comparison in the report.)
+The previous val-only-protocol results are kept locally in
+`artifacts/_archive_valonly_protocol/` for comparison. They were archived (not deleted) so
+the resume logic cannot mistake them for finished runs under the new protocol.
 
 ## Outputs
 
+Every results CSV now carries both the selection-split and the held-out-test metrics:
+
+- `AUROC`, `AUPRC`, `precision`, `recall` - on **val** (the checkpoint-selection split)
+- `test_roc_auc`, `test_average_precision`, `test_accuracy`, `test_f1` - from
+  `task.evaluate()` on the **held-out test split**
+- `test_precision_valthr`, `test_recall_valthr` - test precision/recall at the best-F1
+  threshold chosen on val
+
+Note RelBench's own `test_f1`/`test_accuracy` use a **hardcoded 0.5 threshold**, so they are
+not comparable to this report's val precision/recall (which use a val-tuned threshold) - that
+is what `test_precision_valthr`/`test_recall_valthr` are for.
+
+Files:
 - `artifacts/aspect{1,2,3,4}_results.csv` - final metrics, one row per run
 - `artifacts/loss_curves_A{1,2,3,4}.csv` - per-epoch train loss / val loss / val AUROC
-- `logs/aspect_*.out` - live training prints per job
-
-## Supplementary: SAGE basis-decomposition sweep for Aspect 2 (2 more independent jobs)
-
-Motivated by the edge-count listing: rel-stack's 11 relations are severely imbalanced
-(232x gap between the largest, `votes.PostId->posts`, and the smallest,
-`votes.UserId->users`), while rel-trial's 15 are comparatively balanced (10x
-top-to-bottom, no severe outlier). Tests whether basis decomposition (the original
-R-GCN fix for exactly this failure mode - thin-data relations share a small set of
-basis matrices instead of each estimating a full independent one) helps, and whether
-it helps differently on the two datasets given how differently skewed their edge
-counts are.
-
-Deliberately built on **GraphSAGE**, not RGCN: the assignment's Aspect 2 model list is
-GraphSAGE/GAT/HGT (RGCN is only listed under Aspect 1), so this is a hand-built
-`BasisSAGEConv` that reproduces `SAGEConv`'s exact formula
-(`out = lin_l(mean_neighbors) + lin_r(self)`, no bias on the self term) but constructs
-each relation's `lin_l`/`lin_r` weight matrices from a small shared set of basis
-matrices instead of each relation owning fully independent ones - same SAGE
-computation as the official hetero model, only the parameterization of the weights
-changes. `num_bases = num_relations` is designed to reproduce the official hetero
-SAGE result's structure (every relation can still learn its own independent weights,
-just re-expressed through a large-enough basis) as the "no sharing" reference point.
-See the `sage-basis-0` markdown cell in `final.ipynb` for the full reasoning and the
-empirical checks behind it (verified `scatter(..., reduce='mean')` returns zero, not
-NaN, for destination nodes with no contributing edges, and smoke-tested the whole
-forward/backward pass on real data before committing to the full sweep).
-
-Sweeps `num_bases` in `{1, 2, 4, 8, 12, 16, 20, 22}` for rel-stack and
-`{1, 2, 4, 8, 12, 16, 20, 24, 28, 30}` for rel-trial x 3 seeds (24-30 runs per dataset)
-- denser near the top end than a naive log-spaced sweep, since the gap between 8 and the
-full relation count is where the full-vs-shared transition actually happens and was
-originally the least-resolved part of the curve. `run_sage_basis()` is resumable, so
-rel-trial's already-collected `{1,2,4,8,30}` points are skipped, not recomputed. Same
-split-by-dataset pattern as the other
-two supplementary studies:
-
-```bash
-# on your account
-sbatch run_sagebasis_relstack.sh
-
-# on your labmate's account
-sbatch run_sagebasis_reltrial.sh
-```
-
-Bring the results home the same way:
-
-```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_sage_basis_results.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/aspect2_sage_basis_loss_curves.csv \
-          ~/structed_ML/hw3/artifacts/
-```
-
-Output: `artifacts/aspect2_sage_basis_results.csv` (one row per num_bases per seed) and
-`artifacts/aspect2_sage_basis_loss_curves.csv` (per-epoch curves) - kept separate from
-`aspect2_results.csv` since this is a supplementary follow-up, not an official variant.
-
-## Supplementary: LLM fine-tuning family for Aspect 3 (4 jobs, 2 each for 2 people)
-
-Tests whether Aspect 3's `llm` strategy loses to `column` because serializing a row to
-text loses structure, or because the frozen MiniLM embedding just can't adapt to the
-task - and if adaptation helps, how much of MiniLM needs to be unfrozen. Exactly 3
-experiments per dataset, all on the **identical** dedicated 30,000/10,000-seed sample
-(`a3_build_or_load_large`, separate from the official 6,000/2,000 A3 subsample - does
-not touch or replace it) and the **identical** protocol, so the only thing that changes
-between them is how much of MiniLM can adapt:
-
-- **frozen** - all of MiniLM stays frozen, only a linear projection trains (same
-  architecture as the official `A3Model(..., strategy="llm", ...)`).
-- **k=1** - last 1 MiniLM transformer layer unfrozen (1.77M trainable params).
-- **k=2** - last 2 MiniLM transformer layers unfrozen (3.55M trainable params).
-
-(Freezing verified directly: frozen params never receive a gradient, unfrozen ones
-always do, zero leakage either direction.)
-
-**Protocol note:** early stopping and the final reported metric do not share the same
-validation labels. `a3_loaders_split()` (defined in `aspect3-1`) carves the official
-train pool itself, label-stratified, into train'/val' - val' is used only to pick the
-best checkpoint. The official `val` pool is left untouched during training and
-evaluated exactly once, after the checkpoint is already fixed, to produce the reported
-number. This is **not** applied to the official `id`/`column`/`llm` comparison in
-`aspect3_results.csv`, or to Aspects 1/2/4 - only to these 3 experiments. See the
-`a3-partial-0` / `a3-llm-frozen-large-0` markdown cells in `final.ipynb` for the full
-reasoning.
-
-Split into 4 scripts so two people can each run two (one dataset's frozen job + that
-same dataset's k=1/k=2 job):
-
-```bash
-# person A, your account
-sbatch run_llmfrozen_large_relstack.sh
-sbatch run_partialfinetune_relstack.sh
-
-# person B, labmate's account
-sbatch run_llmfrozen_large_reltrial.sh
-sbatch run_partialfinetune_reltrial.sh
-```
-
-The frozen job is cheap (embedding lookup only, well under a minute per seed once the
-large-sample cache is warm); the k=1/k=2 job is heavier (MiniLM's transformer runs a
-live forward+backward pass every mini-batch on 5x the official sample size), so expect
-it to take noticeably longer.
-
-Bring the results home:
-
-```bash
-rsync -av <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_llm_frozen_large_results.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_llm_frozen_large_loss_curves.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_results.csv \
-          <user>@<server>:~/structed_ML/hw3/artifacts/aspect3_partial_finetune_loss_curves.csv \
-          ~/structed_ML/hw3/artifacts/
-```
-
-Output: `artifacts/aspect3_llm_frozen_large_results.csv` (one row per seed) and
-`artifacts/aspect3_partial_finetune_results.csv` (one row per num_unfrozen per seed),
-plus matching `..._loss_curves.csv` files for each - kept separate from
-`aspect3_results.csv` since this is a supplementary follow-up, not an official strategy.
+- `artifacts/aspect2_sage_basis_*.csv` - basis sweep
+- `artifacts/aspect3_partial_finetune_*.csv` - k=1 partial fine-tune
+- `logs/*.out` - live training prints per job

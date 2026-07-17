@@ -1,0 +1,48 @@
+================================================
+STRUCTML RGCN BASIS SWEEP: rel-trial
+================================================
+Job ID: 368548
+Node: lambda1
+Starting at: Mon Jul 13 12:23:57 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_rgcn_basis: rel-trial | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell rgcn-basis-1 =====
+
+===== exec cell rgcn-basis-2 =====
+
+##### rgcn-basis sweep: rel-trial #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 15.86 seconds.
+rel-trial: 30 relations | basis sweep: [1, 2, 4, 8, 30]
+  bases=1 seed=42: AUROC 0.6866 | params 6,347,453 | 60s
+  bases=1 seed=43: AUROC 0.6826 | params 6,347,453 | 64s
+  bases=1 seed=44: AUROC 0.6888 | params 6,347,453 | 55s
+  bases=2 seed=42: AUROC 0.6892 | params 6,380,281 | 64s
+  bases=2 seed=43: AUROC 0.6809 | params 6,380,281 | 55s
+  bases=2 seed=44: AUROC 0.6838 | params 6,380,281 | 75s
+  bases=4 seed=42: AUROC 0.6819 | params 6,445,937 | 45s
+  bases=4 seed=43: AUROC 0.6786 | params 6,445,937 | 50s
+  bases=4 seed=44: AUROC 0.6857 | params 6,445,937 | 50s
+  bases=8 seed=42: AUROC 0.6917 | params 6,577,249 | 67s
+  bases=8 seed=43: AUROC 0.6894 | params 6,577,249 | 55s
+  bases=8 seed=44: AUROC 0.6833 | params 6,577,249 | 50s
+  bases=30 seed=42: AUROC 0.6841 | params 7,299,465 | 50s
+  bases=30 seed=43: AUROC 0.6857 | params 7,299,465 | 70s
+  bases=30 seed=44: AUROC 0.6820 | params 7,299,465 | 65s
+
+### DONE: rgcn-basis sweep for rel-trial
+
+================================================
+RGCN BASIS SWEEP rel-trial COMPLETE - exit code 0
+Finished at: Mon Jul 13 12:45:28 PM IDT 2026
+================================================

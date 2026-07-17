@@ -1,0 +1,16 @@
+================================================
+STRUCTML ASPECT RUN: prep
+================================================
+Job ID: 368390
+Node: lambda1
+Starting at: Thu Jul  9 07:42:58 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /var/spool/slurmd/artifacts
+
+
+================================================
+ASPECT prep COMPLETE - exit code 2
+Finished at: Thu Jul  9 07:43:15 PM IDT 2026
+================================================

@@ -1,0 +1,48 @@
+================================================
+STRUCTML SAGE BASIS SWEEP: rel-trial
+================================================
+Job ID: 368552
+Node: lambda1
+Starting at: Mon Jul 13 01:03:19 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_sage_basis: rel-trial | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell sage-basis-1 =====
+
+===== exec cell sage-basis-2 =====
+
+##### sage-basis sweep: rel-trial #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 15.95 seconds.
+rel-trial: 30 relations | basis sweep: [1, 2, 4, 8, 30]
+  bases=1 seed=42: AUROC 0.6768 | params 6,354,937 | 66s
+  bases=1 seed=43: AUROC 0.6892 | params 6,354,937 | 46s
+  bases=1 seed=44: AUROC 0.6817 | params 6,354,937 | 58s
+  bases=2 seed=42: AUROC 0.6826 | params 6,420,593 | 69s
+  bases=2 seed=43: AUROC 0.6657 | params 6,420,593 | 51s
+  bases=2 seed=44: AUROC 0.6835 | params 6,420,593 | 53s
+  bases=4 seed=42: AUROC 0.6923 | params 6,551,905 | 68s
+  bases=4 seed=43: AUROC 0.6840 | params 6,551,905 | 59s
+  bases=4 seed=44: AUROC 0.6842 | params 6,551,905 | 44s
+  bases=8 seed=42: AUROC 0.6832 | params 6,814,529 | 54s
+  bases=8 seed=43: AUROC 0.6795 | params 6,814,529 | 63s
+  bases=8 seed=44: AUROC 0.6858 | params 6,814,529 | 68s
+  bases=30 seed=42: AUROC 0.6925 | params 8,258,961 | 68s
+  bases=30 seed=43: AUROC 0.6844 | params 8,258,961 | 48s
+  bases=30 seed=44: AUROC 0.6835 | params 8,258,961 | 68s
+
+### DONE: sage-basis sweep for rel-trial
+
+================================================
+SAGE BASIS SWEEP rel-trial COMPLETE - exit code 0
+Finished at: Mon Jul 13 01:24:09 PM IDT 2026
+================================================

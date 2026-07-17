@@ -2,13 +2,13 @@
 hw3/artifacts/graph_cache/
 hw3/artifacts/aspect3_subgraphs/
 hw3/artifacts/aspect3_subgraphs_large/
-/home/badran.abed/structed_ML/hw3/artifacts/aspect3_subgraphs_large
+hw3/artifacts/aspect3_subgraphs_v2/
 # --- old homework byproducts (large, not needed in the repo) ---
 features/
 hw1/features
 hw2/artifacts/
 
-# --- runtime junk ---ssss
+# --- runtime junk ---
 __pycache__/
 .ipynb_checkpoints/
 

@@ -1,0 +1,71 @@
+================================================
+STRUCTML ASPECT RUN: a2
+================================================
+Job ID: 368438
+Node: lambda1
+Starting at: Sat Jul 11 12:52:21 AM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a2 | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect2-1 =====
+
+===== exec cell aspect2-2 =====
+
+##### rel-stack / user-engagement ##### (10 runs)
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 11.20 seconds.
+  SAGE-homo   seed=44 AUROC=0.8838 AUPRC=0.3225 P=0.368 R=0.350 params=2.38M t=2183s
+  SAGE-hetero seed=42 AUROC=0.8771 AUPRC=0.3056 P=0.348 R=0.355 params=3.76M t=2031s
+  SAGE-hetero seed=43 AUROC=0.8761 AUPRC=0.3009 P=0.347 R=0.346 params=3.76M t=2786s
+  SAGE-hetero seed=44 AUROC=0.8707 AUPRC=0.2922 P=0.350 R=0.332 params=3.76M t=1582s
+  HGT-homo   seed=42 AUROC=0.8711 AUPRC=0.2926 P=0.304 R=0.377 params=2.46M t=2494s
+  HGT-homo   seed=43 AUROC=0.8669 AUPRC=0.2912 P=0.316 R=0.365 params=2.46M t=925s
+  HGT-homo   seed=44 AUROC=0.8660 AUPRC=0.2874 P=0.345 R=0.320 params=2.46M t=1422s
+  HGT-hetero seed=42 AUROC=0.8798 AUPRC=0.3026 P=0.337 R=0.362 params=3.60M t=4829s
+  HGT-hetero seed=43 AUROC=0.8660 AUPRC=0.2875 P=0.325 R=0.345 params=3.60M t=2875s
+  HGT-hetero seed=44 AUROC=0.8639 AUPRC=0.2714 P=0.297 R=0.348 params=3.60M t=1802s
+
+##### rel-trial / study-outcome ##### (12 runs)
+Loading Database object from /home/badran.abed/.cache/relbench/rel-trial/db...
+Done in 16.14 seconds.
+  SAGE-homo   seed=42 AUROC=0.6683 AUPRC=0.7286 P=0.601 R=0.963 params=6.37M t=82s
+  SAGE-homo   seed=43 AUROC=0.6679 AUPRC=0.7205 P=0.621 R=0.947 params=6.37M t=57s
+  SAGE-homo   seed=44 AUROC=0.6573 AUPRC=0.7095 P=0.595 R=0.993 params=6.37M t=37s
+  SAGE-hetero seed=42 AUROC=0.6827 AUPRC=0.7512 P=0.605 R=0.980 params=8.27M t=72s
+  SAGE-hetero seed=43 AUROC=0.6873 AUPRC=0.7508 P=0.609 R=0.966 params=8.27M t=62s
+  SAGE-hetero seed=44 AUROC=0.6902 AUPRC=0.7551 P=0.612 R=0.966 params=8.27M t=67s
+  HGT-homo   seed=42 AUROC=0.6749 AUPRC=0.7317 P=0.616 R=0.948 params=6.45M t=64s
+  HGT-homo   seed=43 AUROC=0.6650 AUPRC=0.7256 P=0.593 R=0.998 params=6.45M t=63s
+  HGT-homo   seed=44 AUROC=0.6740 AUPRC=0.7219 P=0.637 R=0.897 params=6.45M t=82s
+  HGT-hetero seed=42 AUROC=0.6704 AUPRC=0.7272 P=0.623 R=0.936 params=8.77M t=127s
+  HGT-hetero seed=43 AUROC=0.6793 AUPRC=0.7418 P=0.621 R=0.939 params=8.77M t=176s
+  HGT-hetero seed=44 AUROC=0.6624 AUPRC=0.7234 P=0.612 R=0.961 params=8.77M t=127s
+
+===== exec cell aspect2-2b-control =====
+hetero target=8.27M -> homo-wide hidden=224 (6.72M)
+  homo-wide seed=42 AUROC=0.6769 AUPRC=0.7379 P=0.624 R=0.922 params=6.72M t=71s
+  homo-wide seed=43 AUROC=0.6607 AUPRC=0.7066 P=0.602 R=0.970 params=6.72M t=59s
+  homo-wide seed=44 AUROC=0.6678 AUPRC=0.7157 P=0.599 R=0.984 params=6.72M t=63s
+             mean     std
+setting                  
+hetero     0.6867  0.0038
+homo       0.6645  0.0062
+homo-wide  0.6684  0.0081
+
+### DONE: a2
+
+================================================
+ASPECT a2 COMPLETE - exit code 0
+Finished at: Sat Jul 11 07:38:04 AM IDT 2026
+================================================

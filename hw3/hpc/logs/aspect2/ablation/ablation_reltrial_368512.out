@@ -1,0 +1,83 @@
+================================================
+STRUCTML EDGE ABLATION: rel-trial
+================================================
+Job ID: 368512
+Node: lambda1
+Starting at: Sun Jul 12 07:15:32 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_edge_ablation: rel-trial | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect2-1 =====
+
+===== exec cell edge-ablation-1 =====
+
+===== exec cell edge-ablation-2 =====
+
+##### edge ablation: rel-trial #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 16.92 seconds.
+rel-trial: 15 relations to ablate
+  seed 42: baseline AUROC 0.6854
+    - f2p_nct_id: AUROC 0.6800 (drop +0.0054)
+    - f2p_facility_id: AUROC 0.6787 (drop +0.0067)
+    - f2p_nct_id: AUROC 0.6854 (drop -0.0001)
+    - f2p_nct_id: AUROC 0.6880 (drop -0.0027)
+    - f2p_intervention_id: AUROC 0.6877 (drop -0.0023)
+    - f2p_nct_id: AUROC 0.6541 (drop +0.0312)
+    - f2p_nct_id: AUROC 0.6855 (drop -0.0001)
+    - f2p_nct_id: AUROC 0.6854 (drop -0.0000)
+    - f2p_nct_id: AUROC 0.6853 (drop +0.0000)
+    - f2p_outcome_id: AUROC 0.6853 (drop +0.0001)
+    - f2p_nct_id: AUROC 0.6847 (drop +0.0006)
+    - f2p_nct_id: AUROC 0.6635 (drop +0.0218)
+    - f2p_condition_id: AUROC 0.6655 (drop +0.0199)
+    - f2p_nct_id: AUROC 0.6788 (drop +0.0066)
+    - f2p_sponsor_id: AUROC 0.6796 (drop +0.0057)
+  seed 43: baseline AUROC 0.6908
+    - f2p_nct_id: AUROC 0.6878 (drop +0.0030)
+    - f2p_facility_id: AUROC 0.6873 (drop +0.0035)
+    - f2p_nct_id: AUROC 0.6908 (drop +0.0001)
+    - f2p_nct_id: AUROC 0.6921 (drop -0.0013)
+    - f2p_intervention_id: AUROC 0.6919 (drop -0.0010)
+    - f2p_nct_id: AUROC 0.6520 (drop +0.0388)
+    - f2p_nct_id: AUROC 0.6908 (drop -0.0000)
+    - f2p_nct_id: AUROC 0.6908 (drop +0.0000)
+    - f2p_nct_id: AUROC 0.6909 (drop -0.0001)
+    - f2p_outcome_id: AUROC 0.6909 (drop -0.0001)
+    - f2p_nct_id: AUROC 0.6881 (drop +0.0027)
+    - f2p_nct_id: AUROC 0.6751 (drop +0.0157)
+    - f2p_condition_id: AUROC 0.6710 (drop +0.0198)
+    - f2p_nct_id: AUROC 0.6888 (drop +0.0020)
+    - f2p_sponsor_id: AUROC 0.6898 (drop +0.0010)
+  seed 44: baseline AUROC 0.6818
+    - f2p_nct_id: AUROC 0.6758 (drop +0.0060)
+    - f2p_facility_id: AUROC 0.6741 (drop +0.0077)
+    - f2p_nct_id: AUROC 0.6818 (drop +0.0000)
+    - f2p_nct_id: AUROC 0.6865 (drop -0.0047)
+    - f2p_intervention_id: AUROC 0.6865 (drop -0.0047)
+    - f2p_nct_id: AUROC 0.6564 (drop +0.0254)
+    - f2p_nct_id: AUROC 0.6821 (drop -0.0003)
+    - f2p_nct_id: AUROC 0.6821 (drop -0.0003)
+    - f2p_nct_id: AUROC 0.6819 (drop -0.0001)
+    - f2p_outcome_id: AUROC 0.6821 (drop -0.0003)
+    - f2p_nct_id: AUROC 0.6841 (drop -0.0023)
+    - f2p_nct_id: AUROC 0.6712 (drop +0.0106)
+    - f2p_condition_id: AUROC 0.6717 (drop +0.0101)
+    - f2p_nct_id: AUROC 0.6751 (drop +0.0067)
+    - f2p_sponsor_id: AUROC 0.6751 (drop +0.0067)
+
+### DONE: edge ablation for rel-trial
+
+================================================
+EDGE ABLATION rel-trial COMPLETE - exit code 0
+Finished at: Sun Jul 12 07:24:48 PM IDT 2026
+================================================

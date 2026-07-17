@@ -1,0 +1,51 @@
+================================================
+STRUCTML FROZEN LLM BASELINE (large sample): rel-trial
+================================================
+Job ID: 368697
+Node: lambda4
+Starting at: Fri Jul 17 12:36:22 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_llm_frozen_large: rel-trial | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell a3-partial-1 =====
+
+===== exec cell a3-llm-frozen-large-1 =====
+
+===== exec cell a3-llm-frozen-large-2 =====
+
+##### llm-frozen (large sample): rel-trial #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 15.75 seconds.
+    embedded sponsors: 19567 rows
+    embedded facilities_studies: 44310 rows
+    embedded studies: 12954 rows
+    embedded interventions_studies: 14939 rows
+    embedded designs: 12949 rows
+    embedded interventions: 14939 rows
+    embedded eligibilities: 12954 rows
+    embedded conditions_studies: 23948 rows
+    embedded facilities: 30668 rows
+    embedded sponsors_studies: 19567 rows
+    embedded conditions: 23948 rows
+  [split] train'=9596 val'=2398 (carved from official train pool n=11994) | held-out test=960 (official val pool, untouched)
+  seed 42: AUROC 0.6568 | params 3,229,071 | 40s
+  seed 43: AUROC 0.6620 | params 3,229,071 | 34s
+  seed 44: AUROC 0.6607 | params 3,229,071 | 41s
+
+### DONE: frozen llm baseline (large sample) for rel-trial
+
+================================================
+FROZEN LLM BASELINE (large sample) rel-trial COMPLETE - exit code 0
+Finished at: Fri Jul 17 12:43:46 PM IDT 2026
+================================================

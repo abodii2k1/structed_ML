@@ -1,0 +1,31 @@
+================================================
+STRUCTML ASPECT 3 (id/column/llm, held-out test)
+================================================
+Job ID: 368751
+Node: lambda4
+Starting at: Fri Jul 17 06:21:45 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a3 | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell aspect3-2 =====
+rel-stack: all cached, skipping
+rel-trial: all cached, skipping
+
+### DONE: a3
+
+================================================
+ASPECT 3 COMPLETE - exit code 0
+Finished at: Fri Jul 17 06:22:01 PM IDT 2026
+================================================

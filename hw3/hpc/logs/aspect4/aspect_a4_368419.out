@@ -1,0 +1,27 @@
+================================================
+STRUCTML ASPECT RUN: a4
+================================================
+Job ID: 368419
+Node: lambda1
+Starting at: Fri Jul 10 03:58:17 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a4 | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cpu | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect4-1 =====
+
+===== exec cell aspect4-2 =====
+
+##### rel-stack / user-engagement ##### (36 runs)
+Loading Database object from /home/zina.assi/.cache/relbench/rel-stack/db...
+Done in 13.24 seconds.

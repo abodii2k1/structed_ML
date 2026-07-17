@@ -1,0 +1,79 @@
+================================================
+STRUCTML ASPECT 3 (id/column/llm, held-out test)
+================================================
+Job ID: 368744
+Node: lambda4
+Starting at: Fri Jul 17 04:22:49 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a3 | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell aspect3-2 =====
+
+##### rel-stack / user-engagement #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 10.13 seconds.
+  [rel-stack] train n=30000 pos=1500 (0.0500) | val n=10000 pos=281 (0.0281) | test n=20000 (labels masked)
+    subgraph nodes: 1,418,209
+    embedded+tokenized postLinks: 44972 rows
+    embedded+tokenized postHistory: 435566 rows
+    embedded+tokenized posts: 237810 rows
+    embedded+tokenized users: 60000 rows
+    embedded+tokenized comments: 244552 rows
+    embedded+tokenized votes: 227603 rows
+    embedded+tokenized badges: 167706 rows
+  subgraph nodes=1,418,209  seeds=60,000  (train=30000 val=10000 test=20000)
+  id      seed=42 val_AUROC=0.7511 | TEST roc_auc=0.7520 auprc=0.1096 | params=182.83M t=69s
+  id      seed=43 val_AUROC=0.7662 | TEST roc_auc=0.7540 auprc=0.1053 | params=182.83M t=68s
+  id      seed=44 val_AUROC=0.7555 | TEST roc_auc=0.7569 auprc=0.1088 | params=182.83M t=60s
+  column  seed=42 val_AUROC=0.8500 | TEST roc_auc=0.8542 auprc=0.1871 | params=3.60M t=103s
+  column  seed=43 val_AUROC=0.8497 | TEST roc_auc=0.8478 auprc=0.1914 | params=3.60M t=213s
+  column  seed=44 val_AUROC=0.8594 | TEST roc_auc=0.8535 auprc=0.2093 | params=3.60M t=113s
+  llm     seed=42 val_AUROC=0.8157 | TEST roc_auc=0.8297 auprc=0.1656 | params=1.65M t=72s
+  llm     seed=43 val_AUROC=0.8211 | TEST roc_auc=0.8302 auprc=0.1724 | params=1.65M t=100s
+  llm     seed=44 val_AUROC=0.8143 | TEST roc_auc=0.8223 auprc=0.1655 | params=1.65M t=106s
+
+##### rel-trial / study-outcome #####
+Loading Database object from /home/badran.abed/.cache/relbench/rel-trial/db...
+Done in 16.24 seconds.
+  [rel-trial] train n=11994 pos=7647 (0.6376) | val n=960 pos=561 (0.5844) | test n=825 (labels masked)
+    subgraph nodes: 246,534
+    embedded+tokenized sponsors: 20885 rows
+    embedded+tokenized facilities_studies: 47537 rows
+    embedded+tokenized studies: 13779 rows
+    embedded+tokenized interventions_studies: 15755 rows
+    embedded+tokenized designs: 13774 rows
+    embedded+tokenized interventions: 15755 rows
+    embedded+tokenized eligibilities: 13779 rows
+    embedded+tokenized conditions_studies: 25481 rows
+    embedded+tokenized facilities: 33423 rows
+    embedded+tokenized sponsors_studies: 20885 rows
+    embedded+tokenized conditions: 25481 rows
+  subgraph nodes=246,534  seeds=13,779  (train=11994 val=960 test=825)
+  id      seed=42 val_AUROC=0.5099 | TEST roc_auc=0.5037 auprc=0.5912 | params=34.05M t=65s
+  id      seed=43 val_AUROC=0.5235 | TEST roc_auc=0.5101 auprc=0.5971 | params=34.05M t=78s
+  id      seed=44 val_AUROC=0.5288 | TEST roc_auc=0.5153 auprc=0.5899 | params=34.05M t=78s
+  column  seed=42 val_AUROC=0.6800 | TEST roc_auc=0.6834 auprc=0.7559 | params=8.77M t=136s
+  column  seed=43 val_AUROC=0.6715 | TEST roc_auc=0.7048 auprc=0.7655 | params=8.77M t=108s
+  column  seed=44 val_AUROC=0.6729 | TEST roc_auc=0.7071 auprc=0.7589 | params=8.77M t=117s
+  llm     seed=42 val_AUROC=0.6682 | TEST roc_auc=0.6646 auprc=0.7450 | params=3.23M t=114s
+  llm     seed=43 val_AUROC=0.6657 | TEST roc_auc=0.6757 auprc=0.7445 | params=3.23M t=96s
+  llm     seed=44 val_AUROC=0.6670 | TEST roc_auc=0.6686 auprc=0.7401 | params=3.23M t=111s
+
+### DONE: a3
+
+================================================
+ASPECT 3 COMPLETE - exit code 0
+Finished at: Fri Jul 17 06:03:44 PM IDT 2026
+================================================

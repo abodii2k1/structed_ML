@@ -58,10 +58,16 @@ if aspect == "prep":
         g["get_task"](name, tname, download=True)
         del data, col_stats
         gc.collect()
-    for name, tname in g["TASKS"]:
-        print(f"\n### prep: aspect-3 subgraph for {name}", flush=True)
-        blob = g["a3_build_or_load"](name, tname)
-        del blob
-        gc.collect()
+    # The Aspect 3 subgraph is big and slow to build (MiniLM over every node) and is needed
+    # ONLY by the a3 / partial-finetune jobs. Set STRUCTML_SKIP_A3_PREP=1 on an account that
+    # runs only a1/a2/a4/basis (see submit_person_b.sh) to skip building it there.
+    if os.environ.get("STRUCTML_SKIP_A3_PREP") == "1":
+        print("\n### prep: skipping aspect-3 subgraph (STRUCTML_SKIP_A3_PREP=1)", flush=True)
+    else:
+        for name, tname in g["TASKS"]:
+            print(f"\n### prep: aspect-3 subgraph for {name}", flush=True)
+            blob = g["a3_build_or_load"](name, tname)
+            del blob
+            gc.collect()
 
 print(f"\n### DONE: {aspect}", flush=True)
