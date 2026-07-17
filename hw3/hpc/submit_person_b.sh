@@ -24,9 +24,10 @@ echo "================================================"
 echo "Protocol: 30 epochs, patience 6, 3 seeds, train -> val (early stop) -> test (task.evaluate)"
 echo ""
 
-# none of B's jobs touch the Aspect 3 subgraph, so don't spend hours building it here
-export STRUCTML_SKIP_A3_PREP=1
-PREP_ID=$(sbatch --parsable --job-name=prep --export=ALL run_single_aspect.sh prep)
+# None of B's jobs touch the Aspect 3 subgraph, so don't spend hours building it here.
+# Passed explicitly rather than relying on the environment propagating to the job.
+PREP_ID=$(sbatch --parsable --job-name=prep \
+    --export=ALL,STRUCTML_SKIP_A3_PREP=1 run_single_aspect.sh prep)
 echo "Submitted prep - Job ID: $PREP_ID (skipping A3 subgraph - not needed on this account)"
 
 IDS=()

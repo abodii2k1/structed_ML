@@ -2,15 +2,21 @@
 #SBATCH --job-name=structml_partialft_relstack_k1
 #SBATCH --output=logs/partialft_relstack_k1_%j.out
 #SBATCH --error=logs/partialft_relstack_k1_%j.err
-#SBATCH --time=30:00:00
+#SBATCH --time=24:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=96G
 #SBATCH --cpus-per-task=4
 
 # Aspect 3 supplementary: partial MiniLM fine-tune (last 1 layer unfrozen) for rel-stack,
-# 3 seeds = 3 runs (~19.8h measured). Runs on the SAME unified 30,000/10,000/20,000 sample
-# and the SAME protocol as id/column/llm, reported on the held-out test split via
-# task.evaluate() - so the only thing that differs from frozen `llm` is the adaptation.
+# 3 seeds = 3 runs. Runs on the SAME unified 30,000/10,000/20,000 sample and the SAME
+# protocol as id/column/llm, reported on the held-out test split via task.evaluate() - so
+# the only thing that differs from frozen `llm` is the adaptation.
+#
+# WALLTIME: this is the tightest job in the project - ~19.8h measured (6.6h/seed) against
+# the cluster's 24h cap. That should fit, but there is little margin if the node is slower.
+# It is safe either way: results are written after EVERY seed, so if it hits the wall
+# partway, just resubmit - finished seeds are skipped and it continues from where it
+# stopped. Two resubmits would cover the worst realistic case.
 #
 # Needs the unified A3 subgraph cache. Submit via submit_person_a.sh, which runs
 # run_aspect3.sh first and makes this wait for it - launching this and the rel-trial k=1
