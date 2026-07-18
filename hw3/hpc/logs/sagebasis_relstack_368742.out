@@ -32,3 +32,11 @@ rel-stack: 22 relations | basis sweep: [8, 12, 16]
   bases=12 seed=44: val_AUROC=0.8773 | TEST roc_auc=0.8825 auprc=0.3011 | params 3,103,393 | 2409s
   bases=16 seed=42: val_AUROC=0.8772 | TEST roc_auc=0.8816 auprc=0.2987 | params 3,365,889 | 2581s
   bases=16 seed=43: val_AUROC=0.8760 | TEST roc_auc=0.8757 auprc=0.2808 | params 3,365,889 | 2499s
+  bases=16 seed=44: val_AUROC=0.8832 | TEST roc_auc=0.8816 auprc=0.3062 | params 3,365,889 | 2584s
+
+### DONE: sage-basis sweep for rel-stack
+
+================================================
+SAGE BASIS SWEEP rel-stack COMPLETE - exit code 0
+Finished at: Sat Jul 18 09:59:40 AM IDT 2026
+================================================

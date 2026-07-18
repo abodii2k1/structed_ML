@@ -1,0 +1,23 @@
+================================================
+STRUCTML ASPECT RUN: a2
+================================================
+Job ID: 368740
+Node: lambda4
+Starting at: Sat Jul 18 09:59:40 AM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a2 | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect2-1 =====
+
+===== exec cell aspect2-2 =====
