@@ -1,0 +1,34 @@
+================================================
+STRUCTML SAGE BASIS SWEEP: rel-stack
+================================================
+Job ID: 368742
+Node: lambda1
+Starting at: Sat Jul 18 04:20:00 AM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_sage_basis: rel-stack | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell sage-basis-1 =====
+
+===== exec cell sage-basis-2 =====
+
+##### sage-basis sweep: rel-stack #####
+Loading Database object from /home/zina.assi/.cache/relbench/rel-stack/db...
+Done in 21.78 seconds.
+rel-stack: 22 relations | basis sweep: [8, 12, 16]
+  bases=8 seed=42: val_AUROC=0.8752 | TEST roc_auc=0.8783 auprc=0.2908 | params 2,840,897 | 2084s
+  bases=8 seed=43: val_AUROC=0.8733 | TEST roc_auc=0.8738 auprc=0.2916 | params 2,840,897 | 1809s
+  bases=8 seed=44: val_AUROC=0.8738 | TEST roc_auc=0.8787 auprc=0.3028 | params 2,840,897 | 2147s
+  bases=12 seed=42: val_AUROC=0.8758 | TEST roc_auc=0.8805 auprc=0.3058 | params 3,103,393 | 2579s
+  bases=12 seed=43: val_AUROC=0.8696 | TEST roc_auc=0.8728 auprc=0.2798 | params 3,103,393 | 1205s
+  bases=12 seed=44: val_AUROC=0.8773 | TEST roc_auc=0.8825 auprc=0.3011 | params 3,103,393 | 2409s
+  bases=16 seed=42: val_AUROC=0.8772 | TEST roc_auc=0.8816 auprc=0.2987 | params 3,365,889 | 2581s
+  bases=16 seed=43: val_AUROC=0.8760 | TEST roc_auc=0.8757 auprc=0.2808 | params 3,365,889 | 2499s

@@ -1,0 +1,38 @@
+================================================
+STRUCTML ASPECT RUN: prep
+================================================
+Job ID: 368738
+Node: lambda4
+Starting at: Fri Jul 17 04:20:20 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: prep | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+### prep: graph cache for rel-stack
+Loading Database object from /home/zina.assi/.cache/relbench/rel-stack/db...
+Done in 19.94 seconds.
+
+### prep: graph cache for rel-trial
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 7.96 seconds.
+
+### prep: skipping aspect-3 subgraph (STRUCTML_SKIP_A3_PREP=1)
+
+### DONE: prep
+
+================================================
+ASPECT prep COMPLETE - exit code 0
+Finished at: Fri Jul 17 04:26:37 PM IDT 2026
+================================================

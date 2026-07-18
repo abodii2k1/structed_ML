@@ -1,0 +1,72 @@
+================================================
+STRUCTML ASPECT RUN: a1
+================================================
+Job ID: 368739
+Node: lambda4
+Starting at: Fri Jul 17 04:26:37 PM IDT 2026
+
+Python: /home/zina.assi/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a1 | artifacts -> /home/zina.assi/struct/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect1-4 =====
+
+##### rel-stack / user-engagement ##### (18 runs)
+Loading Database object from /home/zina.assi/.cache/relbench/rel-stack/db...
+Done in 10.00 seconds.
+  SAGE-MPNN-D   seed=42 val_AUROC=0.8761 | TEST roc_auc=0.8773 auprc=0.2947 | params=3.03M t=1707s
+  SAGE-MPNN-D   seed=43 val_AUROC=0.8741 | TEST roc_auc=0.8781 auprc=0.2932 | params=3.03M t=1621s
+  SAGE-MPNN-D   seed=44 val_AUROC=0.8758 | TEST roc_auc=0.8789 auprc=0.2968 | params=3.03M t=2241s
+  SAGE-MPNN-U   seed=42 val_AUROC=0.8763 | TEST roc_auc=0.8797 auprc=0.2884 | params=3.03M t=2104s
+  SAGE-MPNN-U   seed=43 val_AUROC=0.8748 | TEST roc_auc=0.8779 auprc=0.2814 | params=3.03M t=1971s
+  SAGE-MPNN-U   seed=44 val_AUROC=0.8795 | TEST roc_auc=0.8833 auprc=0.3161 | params=3.03M t=2713s
+  SAGE-Dir-GNN  seed=42 val_AUROC=0.8798 | TEST roc_auc=0.8806 auprc=0.2999 | params=3.76M t=2743s
+  SAGE-Dir-GNN  seed=43 val_AUROC=0.8725 | TEST roc_auc=0.8761 auprc=0.2800 | params=3.76M t=2013s
+  SAGE-Dir-GNN  seed=44 val_AUROC=0.8800 | TEST roc_auc=0.8797 auprc=0.3025 | params=3.76M t=2535s
+  GAT-MPNN-D   seed=42 val_AUROC=0.8717 | TEST roc_auc=0.8769 auprc=0.2980 | params=5.22M t=1671s
+  GAT-MPNN-D   seed=43 val_AUROC=0.8743 | TEST roc_auc=0.8777 auprc=0.3031 | params=5.22M t=2352s
+  GAT-MPNN-D   seed=44 val_AUROC=0.8784 | TEST roc_auc=0.8821 auprc=0.3005 | params=5.22M t=2572s
+  GAT-MPNN-U   seed=42 val_AUROC=0.8575 | TEST roc_auc=0.8534 auprc=0.2372 | params=5.22M t=884s
+  GAT-MPNN-U   seed=43 val_AUROC=0.8718 | TEST roc_auc=0.8674 auprc=0.2842 | params=5.22M t=3076s
+  GAT-MPNN-U   seed=44 val_AUROC=0.8720 | TEST roc_auc=0.8723 auprc=0.2884 | params=5.22M t=3512s
+  GAT-Dir-GNN  seed=42 val_AUROC=0.8649 | TEST roc_auc=0.8614 auprc=0.2570 | params=8.13M t=2362s
+  GAT-Dir-GNN  seed=43 val_AUROC=0.8678 | TEST roc_auc=0.8692 auprc=0.2945 | params=8.13M t=3326s
+  GAT-Dir-GNN  seed=44 val_AUROC=0.8615 | TEST roc_auc=0.8588 auprc=0.2701 | params=8.13M t=1704s
+
+##### rel-trial / study-outcome ##### (18 runs)
+Loading Database object from /home/zina.assi/.cache/relbench/rel-trial/db...
+Done in 16.65 seconds.
+  SAGE-MPNN-D   seed=42 val_AUROC=0.6766 | TEST roc_auc=0.7090 auprc=0.7688 | params=7.27M t=48s
+  SAGE-MPNN-D   seed=43 val_AUROC=0.6758 | TEST roc_auc=0.6987 auprc=0.7614 | params=7.27M t=58s
+  SAGE-MPNN-D   seed=44 val_AUROC=0.6701 | TEST roc_auc=0.6999 auprc=0.7583 | params=7.27M t=51s
+  SAGE-MPNN-U   seed=42 val_AUROC=0.6896 | TEST roc_auc=0.6764 auprc=0.7536 | params=7.27M t=54s
+  SAGE-MPNN-U   seed=43 val_AUROC=0.6909 | TEST roc_auc=0.6736 auprc=0.7546 | params=7.27M t=72s
+  SAGE-MPNN-U   seed=44 val_AUROC=0.6876 | TEST roc_auc=0.6978 auprc=0.7636 | params=7.27M t=54s
+  SAGE-Dir-GNN  seed=42 val_AUROC=0.6831 | TEST roc_auc=0.6812 auprc=0.7442 | params=8.26M t=63s
+  SAGE-Dir-GNN  seed=43 val_AUROC=0.6876 | TEST roc_auc=0.6915 auprc=0.7691 | params=8.26M t=50s
+  SAGE-Dir-GNN  seed=44 val_AUROC=0.6844 | TEST roc_auc=0.7157 auprc=0.7762 | params=8.26M t=59s
+  GAT-MPNN-D   seed=42 val_AUROC=0.6439 | TEST roc_auc=0.6188 auprc=0.6976 | params=10.25M t=75s
+  GAT-MPNN-D   seed=43 val_AUROC=0.6450 | TEST roc_auc=0.6217 auprc=0.7026 | params=10.25M t=67s
+  GAT-MPNN-D   seed=44 val_AUROC=0.6501 | TEST roc_auc=0.6250 auprc=0.7027 | params=10.25M t=75s
+  GAT-MPNN-U   seed=42 val_AUROC=0.6594 | TEST roc_auc=0.6776 auprc=0.7473 | params=10.25M t=50s
+  GAT-MPNN-U   seed=43 val_AUROC=0.6622 | TEST roc_auc=0.6473 auprc=0.7330 | params=10.25M t=72s
+  GAT-MPNN-U   seed=44 val_AUROC=0.6707 | TEST roc_auc=0.6627 auprc=0.7384 | params=10.25M t=55s
+  GAT-Dir-GNN  seed=42 val_AUROC=0.6675 | TEST roc_auc=0.6382 auprc=0.7311 | params=14.22M t=67s
+  GAT-Dir-GNN  seed=43 val_AUROC=0.6667 | TEST roc_auc=0.6407 auprc=0.7298 | params=14.22M t=73s
+  GAT-Dir-GNN  seed=44 val_AUROC=0.6559 | TEST roc_auc=0.6748 auprc=0.7512 | params=14.22M t=67s
+
+### DONE: a1
+
+================================================
+ASPECT a1 COMPLETE - exit code 0
+Finished at: Sat Jul 18 04:20:00 AM IDT 2026
+================================================
