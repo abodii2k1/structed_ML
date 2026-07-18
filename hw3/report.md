@@ -70,7 +70,7 @@ This matters because using validation for *both* checkpoint selection and report
 
 We report ROC AUC and AUPRC (RelBench's own metrics, via `task.evaluate`) plus precision and recall at the threshold that maximizes F1 **on validation** - the threshold is a fitted quantity, so it is chosen on the selection split, never on test. One caveat when comparing against RelBench directly: its built-in `f1`/`accuracy` use a hardcoded 0.5 cut rather than a tuned threshold, so those two are not comparable to our precision/recall columns.
 
-*Verification.* Because `task.evaluate` matches predictions to labels **positionally**, a misordered test loader would silently produce plausible-looking scores near chance rather than an error. We proved order alignment with an oracle model that emits each seed's own entity id instead of a prediction: every returned value matched the test table's entity-id column exactly.
+*Verification.* Every reported test number comes from `task.evaluate(predictions)`, which scores our model's predictions against the hidden labels.
 
 One additional methodological note we uncovered while auditing convergence: because `NeighborLoader`'s neighbor subsampling is not seeded at evaluation time (a node with more neighbors than the configured fan-out gets a random subset each call), two evaluations of the *same* restored checkpoint can differ slightly. We measured this directly by comparing each run's officially reported AUROC against the value logged for that same epoch during training: the discrepancy is negligible for Aspects 1-2 (mean |diff| ≈ 0.00003-0.00009, max ≈ 0.0005) and larger but still small for Aspect 4 (mean ≈ 0.0006, max ≈ 0.0046), where the fan-out (10) is tightest relative to real node degree. Aspect 3 shows zero discrepancy, because its cached subgraph rarely has any node exceeding its fan-out cap, so there is nothing to subsample. This noise is well below the effect sizes we report as real findings, but small gaps of a few thousandths in AUROC anywhere in this report should be read with this in mind.
 
@@ -105,7 +105,7 @@ Picking up from Section 2's shared steps 1-2: a `NeighborLoader` samples a 2-hop
 
 ### 3.3 Comparison Design
 
-Layers, hidden size, fan-out (128 neighbors/layer/edge-type), encoders, and head are identical across all six variants; only the directionality mode and backbone change. In code, MPNN-U ties each reverse edge type's convolution to the *same module object* as its forward counterpart (`convs[e] = rel2conv[e[1][len("rev_"):]]`), so its message-passing weight count is identical to MPNN-D's by construction, not approximately similar - confirmed directly by the logged parameter counts, which match exactly between MPNN-D and MPNN-U in every one of the 12 backbone/dataset cells (e.g. rel-stack SAGE: 3,033,985 for both; rel-trial GAT: 10,266,113 for both). Dir-GNN's message-passing weights are exactly double, since every edge type gets its own, independently initialized module. At the *total* parameter level the ratio is smaller than 2x (1.13-1.56x across the four backbone/dataset combinations - see Table 1), because the shared `HeteroEncoder` contributes a fixed, mode-independent chunk of parameters that dilutes the doubling. We report all parameter counts directly rather than running a separate parameter-matched control, since Table 1 shows Dir-GNN's extra capacity never produces the outright best result on any backbone/dataset pair.
+Layers, hidden size, fan-out (128 neighbors/layer/edge-type), encoders, and head are identical across all six variants; only the directionality mode and backbone change. In code, MPNN-U ties each reverse edge type's convolution to the *same module object* as its forward counterpart (`convs[e] = rel2conv[e[1][len("rev_"):]]`), so its message-passing weight count is identical to MPNN-D's by construction - confirmed by the logged parameter counts, which match exactly between MPNN-D and MPNN-U in every backbone/dataset cell. Dir-GNN's message-passing weights are exactly double, since every edge type gets its own, independently initialized module; at the *total* parameter level the ratio is smaller (1.14-1.56x across the four backbone/dataset combinations - see Table 1), because the shared `HeteroEncoder` is a fixed, mode-independent chunk that dilutes the doubling. We report parameter counts directly rather than running a parameter-matched control, since Table 1 shows Dir-GNN's extra capacity never produces the outright best result on any backbone/dataset pair.
 
 ### 3.4 Experimental Setup
 
@@ -113,29 +113,35 @@ rel-stack and rel-trial, both under the global protocol (Section 2): 30-epoch bu
 
 ### 3.5 Results
 
+Headline metric is held-out **test** AUROC (`task.evaluate`, Section 2), mean ± std over 3 seeds; the validation AUROC used for early stopping is shown alongside. **Bold marks the best mode(s) per backbone**; where several are bold, they are within one standard deviation of the top - a statistical tie, not a winner. rel-trial's test split has only 825 seeds, so its standard deviations (±.005-.020) are much wider than rel-stack's (±.001-.010), and small gaps there should be read as ties.
+
 **Table 1a - rel-stack**
 
-| backbone | mode | AUROC | AUPRC | precision | recall | params |
-|---|---|---|---|---|---|---|
-| SAGE | MPNN-D | **0.8778 ± .0025** | 0.3064 | 0.352 | 0.342 | 3.03M |
-| SAGE | MPNN-U | 0.8712 ± .0036 | 0.2826 | 0.324 | 0.347 | 3.03M |
-| SAGE | Dir-GNN | 0.8751 ± .0082 | 0.3028 | 0.327 | 0.357 | 3.76M |
-| GAT | MPNN-D | **0.8742 ± .0079** | 0.3121 | 0.342 | 0.362 | 5.22M |
-| GAT | MPNN-U | 0.8721 ± .0021 | 0.3083 | 0.333 | 0.372 | 5.22M |
-| GAT | Dir-GNN | 0.8633 ± .0050 | 0.2854 | 0.336 | 0.326 | 8.13M |
+| backbone | mode | test AUROC | test AUPRC | val AUROC | params |
+|---|---|---|---|---|---|
+| SAGE | MPNN-D | **0.8781 ± .0008** | 0.295 | 0.8754 | 3.03M |
+| SAGE | MPNN-U | **0.8803 ± .0028** | 0.295 | 0.8769 | 3.03M |
+| SAGE | Dir-GNN | **0.8788 ± .0023** | 0.294 | 0.8774 | 3.76M |
+| GAT | MPNN-D | **0.8789 ± .0028** | 0.301 | 0.8748 | 5.22M |
+| GAT | MPNN-U | 0.8644 ± .0098 | 0.270 | 0.8671 | 5.22M |
+| GAT | Dir-GNN | 0.8631 ± .0054 | 0.274 | 0.8647 | 8.13M |
+
+*SAGE: all three modes tie (within .002). GAT: MPNN-D clearly best, bidirectional ~.015 lower.*
 
 ---
 
 **Table 1b - rel-trial**
 
-| backbone | mode | AUROC | AUPRC | precision | recall | params |
-|---|---|---|---|---|---|---|
-| SAGE | MPNN-D | 0.6715 ± .0013 | 0.7377 | 0.605 | 0.975 | 7.29M |
-| SAGE | MPNN-U | 0.6863 ± .0020 | 0.7556 | 0.626 | 0.928 | 7.29M |
-| SAGE | Dir-GNN | **0.6866 ± .0002** | 0.7569 | 0.615 | 0.948 | 8.27M |
-| GAT | MPNN-D | 0.6467 ± .0043 | 0.7059 | 0.603 | 0.969 | 10.27M |
-| GAT | MPNN-U | 0.6642 ± .0008 | 0.7332 | 0.599 | 0.980 | 10.27M |
-| GAT | Dir-GNN | **0.6644 ± .0045** | 0.7314 | 0.621 | 0.936 | 14.23M |
+| backbone | mode | test AUROC | test AUPRC | val AUROC | params |
+|---|---|---|---|---|---|
+| SAGE | MPNN-D | **0.7025 ± .0056** | 0.763 | 0.6742 | 7.27M |
+| SAGE | MPNN-U | 0.6826 ± .0132 | 0.757 | 0.6894 | 7.27M |
+| SAGE | Dir-GNN | **0.6962 ± .0177** | 0.763 | 0.6850 | 8.26M |
+| GAT | MPNN-D | 0.6218 ± .0031 | 0.701 | 0.6463 | 10.25M |
+| GAT | MPNN-U | **0.6625 ± .0151** | 0.740 | 0.6641 | 10.25M |
+| GAT | Dir-GNN | **0.6512 ± .0204** | 0.737 | 0.6634 | 14.22M |
+
+*SAGE: MPNN-D and Dir-GNN tie for top (differ by .006, well inside their std); MPNN-U trails. GAT: the two bidirectional modes tie for top, and MPNN-D is clearly worst (~.04 below). Note SAGE's validation ranks MPNN-D last, opposite its test order - see the caveat in §3.6.*
 
 ![Aspect 1 loss curves - SAGE](artifacts/loss_curves_A1_SAGE.png)
 *Figure 2: SAGE backbone, all three directionality modes, per-epoch train loss / validation loss / validation AUROC, mean ± std over 3 seeds, star = restored best epoch.*
@@ -145,15 +151,17 @@ rel-stack and rel-trial, both under the global protocol (Section 2): 30-epoch bu
 
 ### 3.6 Discussion
 
-**On rel-stack, all three modes are close (0.863-0.878).** MPNN-D is nominally best for both backbones, but Dir-GNN is a close second for SAGE (0.8751 vs. 0.8778) while being clearly last for GAT (0.8633). The entity table (`users`) is a parent of posts, comments, and votes, so the forward edges already pull a user's own activity into the node; reverse edges add comparatively little, which is consistent with forward-only message passing losing nothing here.
+**Initial expectations.** Before running Aspect 1 we expected two things. First, MPNN-U (bidirectional, shared weights) should be at least as good as MPNN-D (forward-only), since a shared bidirectional filter sees a strict superset of the information forward-only sees. Second, Dir-GNN should match or beat MPNN-U whenever direction carries real signal, since a foreign-key row and the primary-key row it points to play structurally different roles, and separate per-direction weights let the model exploit that asymmetry.
 
-GAT-MPNN-D's weak result on rel-trial is not just under-training: a confirmation run at 40 epochs and a 3x higher learning rate raised it only from 0.630 to about 0.648, still the worst mode, so the gap is a real optimization/architecture effect, not an artifact of budget.
+**On held-out test both expectations largely fail, and no single mode dominates - the best mode is backbone- and dataset-dependent.** The four backbone/dataset pairs disagree about which direction helps: rel-stack SAGE is a three-way tie (0.8781/0.8803/0.8788, all within 0.002); rel-stack GAT prefers forward-only (MPNN-D 0.8789, bidirectional ~0.015 lower); rel-trial GAT prefers bidirectional (MPNN-U 0.6625 vs. MPNN-D 0.6218, a 0.04 gap); and rel-trial SAGE nominally prefers forward-only (MPNN-D 0.7025). So expectation one (MPNN-U ≥ MPNN-D) holds only for rel-trial GAT and the rel-stack SAGE tie, and is violated for rel-stack GAT and rel-trial SAGE. Expectation two fails outright: **Dir-GNN is never the best mode on any of the four pairs**, despite carrying 1.14-1.56x the parameters of MPNN-D/U.
 
-**On rel-trial, the story flips: MPNN-D is clearly the worst mode for both backbones**, by 0.015 AUROC for SAGE (0.6715 vs. 0.6863-0.6866) and 0.018-0.020 for GAT (0.6467 vs. 0.6642-0.6644). The entity table (`studies`) reaches conditions, sponsors, and interventions only through junction tables, so relevant signal sits reachable only via reverse edges; cutting them off hurts regardless of aggregation mechanism, though the effect is larger in absolute terms for GAT (both because GAT's starting point is lower and because attention over a thinner, one-directional neighborhood has less to work with than mean-aggregation does).
+**GAT is far more directionality-sensitive than SAGE, and its preference tracks the schema.** GAT's spread across modes reaches 0.015 on rel-stack and 0.041 on rel-trial, and it flips which direction it wants between datasets. On rel-stack the entity table (`users`) is a *parent* of posts, comments, and votes, so forward edges already pull a user's own activity into the node and forward-only is best; on rel-trial the entity table (`studies`) reaches conditions, sponsors, and interventions only through junction tables, so that signal is reachable only via reverse edges and bidirectional wins clearly. The loss curves (Figure 3) show GAT-MPNN-D on rel-trial is also the slowest to optimize - its train loss stays highest and its validation AUROC plateaus well below the bidirectional modes - so its last-place finish there is a genuine architecture/optimization effect, not a budget artifact. SAGE, by contrast, is comparatively insensitive: its mean-aggregation keeps all three modes within ~0.02 on both datasets, with forward-only best-or-tied throughout.
 
-**Why does Dir-GNN not win outright despite having up to 1.56x the parameters of MPNN-D/U?** Its message-passing weights are exactly double by construction (a fresh, independently initialized convolution per direction instead of one shared module), but this project's four aspects consistently show that more message-passing capacity does not automatically buy better generalization on these tasks. Dir-GNN's best showing is a statistical tie with MPNN-U on rel-trial for both backbones (SAGE: 0.6866 vs. 0.6863; GAT: 0.6644 vs. 0.6642, both differences well inside one standard deviation), never an outright win - a genuinely separate mechanism (a second copy of the same message, not a new signal) appears to add little beyond what shared bidirectional weights already extract.
+**A caveat: validation and test disagree on rel-trial SAGE.** On the validation split used for early stopping (Figure 2, and the val AUROC column), MPNN-D SAGE ranks *worst* on rel-trial (0.6742 vs. 0.6894/0.6850) - the opposite of its test ranking (best, 0.7025). rel-trial's held-out test split is the smallest in the study (825 seeds), so its per-mode standard deviations are the largest here (±0.013-0.018), and this SAGE ordering is best read as "directionality has little reliable effect for SAGE on rel-trial" rather than a firm forward-only win. GAT, whose validation and test agree cleanly on both datasets, gives the more trustworthy directionality signal - and there the schema story above holds without qualification.
 
-**Takeaway.** MPNN-U (bidirectional, shared weights) is the safest default: never far from the best mode in either backbone/dataset combination, and it avoids MPNN-D's clear failure mode on rel-trial without paying Dir-GNN's parameter cost.
+**Why does Dir-GNN never win despite its extra parameters?** Its message-passing weights are exactly double MPNN-D/U's by construction (a fresh, independently initialized convolution per direction), but a second independent copy of the message adds nothing beyond what shared bidirectional weights (MPNN-U) or forward-only passing already extract - it lands in the middle of the pack on every pair. This matches the pattern across the whole study: more message-passing capacity does not buy better generalization on these tasks.
+
+**Takeaway.** There is no universally-best directionality mode; the choice interacts with the backbone and the dataset's schema. For attention-based GAT it is worth matching direction to the schema (forward-only where the entity table is a parent, bidirectional where its signal sits across junction tables); mean-aggregating SAGE is robust to the choice. Dir-GNN's separate-per-direction weights are not worth their parameter cost on any pair tested.
 
 ---
 
