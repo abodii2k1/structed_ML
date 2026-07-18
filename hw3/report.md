@@ -70,7 +70,7 @@ This matters because using validation for *both* checkpoint selection and report
 
 We report ROC AUC and AUPRC (RelBench's own metrics, via `task.evaluate`) plus precision and recall at the threshold that maximizes F1 **on validation** - the threshold is a fitted quantity, so it is chosen on the selection split, never on test. One caveat when comparing against RelBench directly: its built-in `f1`/`accuracy` use a hardcoded 0.5 cut rather than a tuned threshold, so those two are not comparable to our precision/recall columns.
 
-*Verification.* Because `task.evaluate` matches predictions to labels **positionally**, a misordered test loader would silently produce plausible-looking scores near chance rather than an error. We proved order alignment with an oracle model that emits each seed's own entity id instead of a prediction: every returned value matched the test table's entity-id column exactly.
+*Verification.* Every reported test number comes from `task.evaluate(predictions)`, which scores our model's predictions against the hidden labels.
 
 One additional methodological note we uncovered while auditing convergence: because `NeighborLoader`'s neighbor subsampling is not seeded at evaluation time (a node with more neighbors than the configured fan-out gets a random subset each call), two evaluations of the *same* restored checkpoint can differ slightly. We measured this directly by comparing each run's officially reported AUROC against the value logged for that same epoch during training: the discrepancy is negligible for Aspects 1-2 (mean |diff| ≈ 0.00003-0.00009, max ≈ 0.0005) and larger but still small for Aspect 4 (mean ≈ 0.0006, max ≈ 0.0046), where the fan-out (10) is tightest relative to real node degree. Aspect 3 shows zero discrepancy, because its cached subgraph rarely has any node exceeding its fan-out cap, so there is nothing to subsample. This noise is well below the effect sizes we report as real findings, but small gaps of a few thousandths in AUROC anywhere in this report should be read with this in mind.
 
@@ -113,18 +113,20 @@ rel-stack and rel-trial, both under the global protocol (Section 2): 30-epoch bu
 
 ### 3.5 Results
 
-Headline metric is held-out **test** AUROC (`task.evaluate`, Section 2); the validation AUROC used for early stopping is shown alongside. Bold marks the best mode per backbone.
+Headline metric is held-out **test** AUROC (`task.evaluate`, Section 2), mean ± std over 3 seeds; the validation AUROC used for early stopping is shown alongside. **Bold marks the best mode(s) per backbone**; where several are bold, they are within one standard deviation of the top - a statistical tie, not a winner. rel-trial's test split has only 825 seeds, so its standard deviations (±.005-.020) are much wider than rel-stack's (±.001-.010), and small gaps there should be read as ties.
 
 **Table 1a - rel-stack**
 
 | backbone | mode | test AUROC | test AUPRC | val AUROC | params |
 |---|---|---|---|---|---|
-| SAGE | MPNN-D | 0.8781 ± .0008 | 0.295 | 0.8754 | 3.03M |
+| SAGE | MPNN-D | **0.8781 ± .0008** | 0.295 | 0.8754 | 3.03M |
 | SAGE | MPNN-U | **0.8803 ± .0028** | 0.295 | 0.8769 | 3.03M |
-| SAGE | Dir-GNN | 0.8788 ± .0023 | 0.294 | 0.8774 | 3.76M |
+| SAGE | Dir-GNN | **0.8788 ± .0023** | 0.294 | 0.8774 | 3.76M |
 | GAT | MPNN-D | **0.8789 ± .0028** | 0.301 | 0.8748 | 5.22M |
 | GAT | MPNN-U | 0.8644 ± .0098 | 0.270 | 0.8671 | 5.22M |
 | GAT | Dir-GNN | 0.8631 ± .0054 | 0.274 | 0.8647 | 8.13M |
+
+*SAGE: all three modes tie (within .002). GAT: MPNN-D clearly best, bidirectional ~.015 lower.*
 
 ---
 
@@ -134,10 +136,12 @@ Headline metric is held-out **test** AUROC (`task.evaluate`, Section 2); the val
 |---|---|---|---|---|---|
 | SAGE | MPNN-D | **0.7025 ± .0056** | 0.763 | 0.6742 | 7.27M |
 | SAGE | MPNN-U | 0.6826 ± .0132 | 0.757 | 0.6894 | 7.27M |
-| SAGE | Dir-GNN | 0.6962 ± .0177 | 0.763 | 0.6850 | 8.26M |
+| SAGE | Dir-GNN | **0.6962 ± .0177** | 0.763 | 0.6850 | 8.26M |
 | GAT | MPNN-D | 0.6218 ± .0031 | 0.701 | 0.6463 | 10.25M |
 | GAT | MPNN-U | **0.6625 ± .0151** | 0.740 | 0.6641 | 10.25M |
-| GAT | Dir-GNN | 0.6512 ± .0204 | 0.737 | 0.6634 | 14.22M |
+| GAT | Dir-GNN | **0.6512 ± .0204** | 0.737 | 0.6634 | 14.22M |
+
+*SAGE: MPNN-D and Dir-GNN tie for top (differ by .006, well inside their std); MPNN-U trails. GAT: the two bidirectional modes tie for top, and MPNN-D is clearly worst (~.04 below). Note SAGE's validation ranks MPNN-D last, opposite its test order - see the caveat in §3.6.*
 
 ![Aspect 1 loss curves - SAGE](artifacts/loss_curves_A1_SAGE.png)
 *Figure 2: SAGE backbone, all three directionality modes, per-epoch train loss / validation loss / validation AUROC, mean ± std over 3 seeds, star = restored best epoch.*
