@@ -1,0 +1,38 @@
+================================================
+STRUCTML ASPECT RUN: prep
+================================================
+Job ID: 368761
+Node: lambda4
+Starting at: Sat Jul 18 04:00:23 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: prep | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+### prep: graph cache for rel-stack
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 19.80 seconds.
+
+### prep: graph cache for rel-trial
+Loading Database object from /home/badran.abed/.cache/relbench/rel-trial/db...
+Done in 16.01 seconds.
+
+### prep: skipping aspect-3 subgraph (STRUCTML_SKIP_A3_PREP=1)
+
+### DONE: prep
+
+================================================
+ASPECT prep COMPLETE - exit code 0
+Finished at: Sat Jul 18 04:02:59 PM IDT 2026
+================================================

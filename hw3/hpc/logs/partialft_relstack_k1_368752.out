@@ -1,0 +1,35 @@
+================================================
+STRUCTML PARTIAL LLM FINE-TUNE: rel-stack (k=1)
+================================================
+Job ID: 368752
+Node: lambda4
+Starting at: Sat Jul 18 12:03:33 AM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_partial_finetune: rel-stack | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect3-1 =====
+
+===== exec cell a3-partial-1 =====
+
+===== exec cell a3-partial-2 =====
+
+##### llm-partial fine-tune: rel-stack #####
+  k=1 seed=42: val_AUROC=0.8223 | TEST roc_auc=0.8377 auprc=0.1881 | params 3,421,375 | 18568s
+  k=1 seed=43: val_AUROC=0.8263 | TEST roc_auc=0.8349 auprc=0.1699 | params 3,421,375 | 20036s
+  k=1 seed=44: val_AUROC=0.8174 | TEST roc_auc=0.8284 auprc=0.1722 | params 3,421,375 | 17029s
+
+### DONE: partial finetune for rel-stack
+
+================================================
+PARTIAL LLM FINE-TUNE rel-stack k=1 COMPLETE - exit code 0
+Finished at: Sat Jul 18 04:00:21 PM IDT 2026
+================================================

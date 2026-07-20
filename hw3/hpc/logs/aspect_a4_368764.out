@@ -1,0 +1,110 @@
+================================================
+STRUCTML ASPECT RUN: a4
+================================================
+Job ID: 368764
+Node: lambda4
+Starting at: Sat Jul 18 04:02:59 PM IDT 2026
+
+Python: /home/badran.abed/miniconda3/envs/structml/bin/python
+Conda env: structml
+Artifacts: /home/badran.abed/structed_ML/hw3/artifacts
+
+### hpc_run_aspect: a4 | artifacts -> /home/badran.abed/structed_ML/hw3/artifacts
+
+===== exec cell aspect1-1 =====
+device: cuda | pyg-lib: True
+
+===== exec cell aspect1-2 =====
+
+===== exec cell aspect1-3 =====
+
+===== exec cell aspect4-1 =====
+
+===== exec cell aspect4-2 =====
+
+##### rel-stack / user-engagement ##### (36 runs)
+Loading Database object from /home/badran.abed/.cache/relbench/rel-stack/db...
+Done in 10.12 seconds.
+  skip=False L=1  seed=42 val_AUROC=0.8834 | TEST roc_auc=0.8867 | cos=0.456 dirE=0.695 t=2374s
+  skip=False L=1  seed=43 val_AUROC=0.8796 | TEST roc_auc=0.8816 | cos=0.412 dirE=0.780 t=1529s
+  skip=False L=1  seed=44 val_AUROC=0.8820 | TEST roc_auc=0.8872 | cos=0.439 dirE=0.748 t=2420s
+  skip=False L=2  seed=42 val_AUROC=0.8782 | TEST roc_auc=0.8800 | cos=0.694 dirE=0.271 t=1311s
+  skip=False L=2  seed=43 val_AUROC=0.8858 | TEST roc_auc=0.8877 | cos=0.648 dirE=0.354 t=3164s
+  skip=False L=2  seed=44 val_AUROC=0.8845 | TEST roc_auc=0.8883 | cos=0.695 dirE=0.274 t=3172s
+  skip=False L=3  seed=42 val_AUROC=0.8820 | TEST roc_auc=0.8829 | cos=0.554 dirE=0.381 t=1858s
+  skip=False L=3  seed=43 val_AUROC=0.8838 | TEST roc_auc=0.8864 | cos=0.563 dirE=0.377 t=2798s
+  skip=False L=3  seed=44 val_AUROC=0.8796 | TEST roc_auc=0.8822 | cos=0.579 dirE=0.397 t=1317s
+  skip=False L=4  seed=42 val_AUROC=0.8810 | TEST roc_auc=0.8831 | cos=0.602 dirE=0.351 t=2441s
+  skip=False L=4  seed=43 val_AUROC=0.8832 | TEST roc_auc=0.8863 | cos=0.680 dirE=0.272 t=2603s
+  skip=False L=4  seed=44 val_AUROC=0.8819 | TEST roc_auc=0.8846 | cos=0.734 dirE=0.220 t=1925s
+  skip=False L=6  seed=42 val_AUROC=0.8781 | TEST roc_auc=0.8789 | cos=0.711 dirE=0.306 t=1764s
+  skip=False L=6  seed=43 val_AUROC=0.8780 | TEST roc_auc=0.8775 | cos=0.757 dirE=0.219 t=1675s
+  skip=False L=6  seed=44 val_AUROC=0.8802 | TEST roc_auc=0.8808 | cos=0.721 dirE=0.273 t=2287s
+  skip=False L=8  seed=42 val_AUROC=0.8797 | TEST roc_auc=0.8811 | cos=0.577 dirE=0.459 t=3148s
+  skip=False L=8  seed=43 val_AUROC=0.8778 | TEST roc_auc=0.8802 | cos=0.667 dirE=0.395 t=3515s
+  skip=False L=8  seed=44 val_AUROC=0.8794 | TEST roc_auc=0.8792 | cos=0.844 dirE=0.282 t=2452s
+  skip=True  L=1  seed=42 val_AUROC=0.8856 | TEST roc_auc=0.8871 | cos=0.490 dirE=0.697 t=2221s
+  skip=True  L=1  seed=43 val_AUROC=0.8814 | TEST roc_auc=0.8840 | cos=0.522 dirE=0.624 t=1746s
+  skip=True  L=1  seed=44 val_AUROC=0.8820 | TEST roc_auc=0.8823 | cos=0.508 dirE=0.649 t=1937s
+  skip=True  L=2  seed=42 val_AUROC=0.8843 | TEST roc_auc=0.8868 | cos=0.612 dirE=0.476 t=1654s
+  skip=True  L=2  seed=43 val_AUROC=0.8829 | TEST roc_auc=0.8841 | cos=0.595 dirE=0.493 t=1847s
+  skip=True  L=2  seed=44 val_AUROC=0.8851 | TEST roc_auc=0.8862 | cos=0.550 dirE=0.568 t=2040s
+  skip=True  L=3  seed=42 val_AUROC=0.8837 | TEST roc_auc=0.8854 | cos=0.591 dirE=0.564 t=1921s
+  skip=True  L=3  seed=43 val_AUROC=0.8869 | TEST roc_auc=0.8874 | cos=0.452 dirE=0.722 t=2970s
+  skip=True  L=3  seed=44 val_AUROC=0.8883 | TEST roc_auc=0.8897 | cos=0.454 dirE=0.652 t=3188s
+  skip=True  L=4  seed=42 val_AUROC=0.8866 | TEST roc_auc=0.8866 | cos=0.586 dirE=0.606 t=2819s
+  skip=True  L=4  seed=43 val_AUROC=0.8848 | TEST roc_auc=0.8856 | cos=0.501 dirE=0.623 t=2464s
+  skip=True  L=4  seed=44 val_AUROC=0.8835 | TEST roc_auc=0.8845 | cos=0.581 dirE=0.454 t=1714s
+  skip=True  L=6  seed=42 val_AUROC=0.8855 | TEST roc_auc=0.8864 | cos=0.682 dirE=0.550 t=2586s
+  skip=True  L=6  seed=43 val_AUROC=0.8868 | TEST roc_auc=0.8877 | cos=0.510 dirE=0.638 t=1759s
+  skip=True  L=6  seed=44 val_AUROC=0.8842 | TEST roc_auc=0.8846 | cos=0.503 dirE=0.793 t=1772s
+  skip=True  L=8  seed=42 val_AUROC=0.8880 | TEST roc_auc=0.8887 | cos=0.548 dirE=0.763 t=2386s
+  skip=True  L=8  seed=43 val_AUROC=0.8810 | TEST roc_auc=0.8839 | cos=0.547 dirE=0.627 t=1620s
+  skip=True  L=8  seed=44 val_AUROC=0.8836 | TEST roc_auc=0.8846 | cos=0.604 dirE=0.656 t=2133s
+
+##### rel-trial / study-outcome ##### (36 runs)
+Loading Database object from /home/badran.abed/.cache/relbench/rel-trial/db...
+Done in 15.77 seconds.
+  skip=False L=1  seed=42 val_AUROC=0.6723 | TEST roc_auc=0.6828 | cos=0.390 dirE=0.798 t=109s
+  skip=False L=1  seed=43 val_AUROC=0.6749 | TEST roc_auc=0.6995 | cos=0.404 dirE=0.744 t=82s
+  skip=False L=1  seed=44 val_AUROC=0.6673 | TEST roc_auc=0.6977 | cos=0.392 dirE=0.748 t=69s
+  skip=False L=2  seed=42 val_AUROC=0.6863 | TEST roc_auc=0.6748 | cos=0.472 dirE=0.445 t=90s
+  skip=False L=2  seed=43 val_AUROC=0.6858 | TEST roc_auc=0.6788 | cos=0.427 dirE=0.523 t=95s
+  skip=False L=2  seed=44 val_AUROC=0.6889 | TEST roc_auc=0.6884 | cos=0.427 dirE=0.509 t=100s
+  skip=False L=3  seed=42 val_AUROC=0.6838 | TEST roc_auc=0.6932 | cos=0.559 dirE=0.302 t=61s
+  skip=False L=3  seed=43 val_AUROC=0.6968 | TEST roc_auc=0.6962 | cos=0.503 dirE=0.321 t=79s
+  skip=False L=3  seed=44 val_AUROC=0.6843 | TEST roc_auc=0.6905 | cos=0.490 dirE=0.361 t=98s
+  skip=False L=4  seed=42 val_AUROC=0.6860 | TEST roc_auc=0.7062 | cos=0.500 dirE=0.327 t=96s
+  skip=False L=4  seed=43 val_AUROC=0.6829 | TEST roc_auc=0.7000 | cos=0.610 dirE=0.228 t=56s
+  skip=False L=4  seed=44 val_AUROC=0.6890 | TEST roc_auc=0.6913 | cos=0.550 dirE=0.278 t=101s
+  skip=False L=6  seed=42 val_AUROC=0.6783 | TEST roc_auc=0.6903 | cos=0.568 dirE=0.234 t=115s
+  skip=False L=6  seed=43 val_AUROC=0.6799 | TEST roc_auc=0.6926 | cos=0.665 dirE=0.181 t=58s
+  skip=False L=6  seed=44 val_AUROC=0.6833 | TEST roc_auc=0.7026 | cos=0.633 dirE=0.210 t=78s
+  skip=False L=8  seed=42 val_AUROC=0.6783 | TEST roc_auc=0.6837 | cos=0.547 dirE=0.293 t=109s
+  skip=False L=8  seed=43 val_AUROC=0.6841 | TEST roc_auc=0.6831 | cos=0.551 dirE=0.260 t=113s
+  skip=False L=8  seed=44 val_AUROC=0.6795 | TEST roc_auc=0.6960 | cos=0.567 dirE=0.236 t=85s
+  skip=True  L=1  seed=42 val_AUROC=0.6634 | TEST roc_auc=0.7021 | cos=0.409 dirE=1.271 t=65s
+  skip=True  L=1  seed=43 val_AUROC=0.6670 | TEST roc_auc=0.6941 | cos=0.410 dirE=1.261 t=67s
+  skip=True  L=1  seed=44 val_AUROC=0.6630 | TEST roc_auc=0.6940 | cos=0.407 dirE=1.179 t=73s
+  skip=True  L=2  seed=42 val_AUROC=0.6775 | TEST roc_auc=0.6870 | cos=0.482 dirE=0.696 t=74s
+  skip=True  L=2  seed=43 val_AUROC=0.6867 | TEST roc_auc=0.6998 | cos=0.393 dirE=0.830 t=74s
+  skip=True  L=2  seed=44 val_AUROC=0.6811 | TEST roc_auc=0.6964 | cos=0.387 dirE=0.900 t=80s
+  skip=True  L=3  seed=42 val_AUROC=0.6760 | TEST roc_auc=0.6910 | cos=0.529 dirE=0.592 t=58s
+  skip=True  L=3  seed=43 val_AUROC=0.6885 | TEST roc_auc=0.6816 | cos=0.449 dirE=0.702 t=75s
+  skip=True  L=3  seed=44 val_AUROC=0.6926 | TEST roc_auc=0.6837 | cos=0.389 dirE=0.781 t=87s
+  skip=True  L=4  seed=42 val_AUROC=0.6880 | TEST roc_auc=0.7038 | cos=0.530 dirE=0.543 t=64s
+  skip=True  L=4  seed=43 val_AUROC=0.6867 | TEST roc_auc=0.7065 | cos=0.474 dirE=0.695 t=76s
+  skip=True  L=4  seed=44 val_AUROC=0.6860 | TEST roc_auc=0.6951 | cos=0.595 dirE=0.520 t=53s
+  skip=True  L=6  seed=42 val_AUROC=0.6771 | TEST roc_auc=0.6792 | cos=0.550 dirE=0.538 t=102s
+  skip=True  L=6  seed=43 val_AUROC=0.6719 | TEST roc_auc=0.6886 | cos=0.596 dirE=0.518 t=101s
+  skip=True  L=6  seed=44 val_AUROC=0.6777 | TEST roc_auc=0.7082 | cos=0.526 dirE=0.524 t=72s
+  skip=True  L=8  seed=42 val_AUROC=0.6803 | TEST roc_auc=0.6940 | cos=0.780 dirE=0.191 t=67s
+  skip=True  L=8  seed=43 val_AUROC=0.6804 | TEST roc_auc=0.7182 | cos=0.734 dirE=0.216 t=61s
+  skip=True  L=8  seed=44 val_AUROC=0.6822 | TEST roc_auc=0.6895 | cos=0.609 dirE=0.479 t=104s
+
+### DONE: a4
+
+================================================
+ASPECT a4 COMPLETE - exit code 0
+Finished at: Sun Jul 19 03:27:53 PM IDT 2026
+================================================
