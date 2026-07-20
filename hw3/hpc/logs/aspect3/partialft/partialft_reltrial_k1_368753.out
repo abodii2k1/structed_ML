@@ -23,3 +23,13 @@ device: cuda | pyg-lib: True
 ===== exec cell a3-partial-2 =====
 
 ##### llm-partial fine-tune: rel-trial #####
+  k=1 seed=42: val_AUROC=0.6667 | TEST roc_auc=0.6784 auprc=0.7516 | params 5,003,535 | 6349s
+  k=1 seed=43: val_AUROC=0.6658 | TEST roc_auc=0.6778 auprc=0.7542 | params 5,003,535 | 6357s
+  k=1 seed=44: val_AUROC=0.6710 | TEST roc_auc=0.6779 auprc=0.7416 | params 5,003,535 | 5913s
+
+### DONE: partial finetune for rel-trial
+
+================================================
+PARTIAL LLM FINE-TUNE rel-trial k=1 COMPLETE - exit code 0
+Finished at: Fri Jul 17 11:34:31 PM IDT 2026
+================================================

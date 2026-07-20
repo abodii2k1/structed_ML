@@ -11,3 +11,101 @@ a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method ha
   dry = "--dry" in sys.argv
 a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
   dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 4264.52it/s]
+a3-partial-1:33: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 4527.59it/s]
+a3-partial-1:33: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
+a3-partial-1:40: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  dry = "--dry" in sys.argv
