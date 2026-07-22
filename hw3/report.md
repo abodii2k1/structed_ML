@@ -113,35 +113,29 @@ rel-stack and rel-trial, both under the global protocol (Section 2): 30-epoch bu
 
 ### 3.5 Results
 
-Headline metric is held-out **test** AUROC (`task.evaluate`, Section 2), mean ± std over 3 seeds; the validation AUROC used for early stopping is shown alongside. **Bold marks the best mode(s) per backbone**; where several are bold, they are within one standard deviation of the top - a statistical tie, not a winner. rel-trial's test split has only 825 seeds, so its standard deviations (±.005-.020) are much wider than rel-stack's (±.001-.010), and small gaps there should be read as ties.
-
 **Table 1a - rel-stack**
 
-| backbone | mode | test AUROC | test AUPRC | val AUROC | params |
-|---|---|---|---|---|---|
-| SAGE | MPNN-D | **0.8781 ± .0008** | 0.295 | 0.8754 | 3.03M |
-| SAGE | MPNN-U | **0.8803 ± .0028** | 0.295 | 0.8769 | 3.03M |
-| SAGE | Dir-GNN | **0.8788 ± .0023** | 0.294 | 0.8774 | 3.76M |
-| GAT | MPNN-D | **0.8789 ± .0028** | 0.301 | 0.8748 | 5.22M |
-| GAT | MPNN-U | 0.8644 ± .0098 | 0.270 | 0.8671 | 5.22M |
-| GAT | Dir-GNN | 0.8631 ± .0054 | 0.274 | 0.8647 | 8.13M |
-
-*SAGE: all three modes tie (within .002). GAT: MPNN-D clearly best, bidirectional ~.015 lower.*
+| backbone | mode | AUROC | AUPRC | precision | recall | params |
+|---|---|---|---|---|---|---|
+| SAGE | MPNN-D | **0.8778 ± .0025** | 0.3064 | 0.352 | 0.342 | 3.03M |
+| SAGE | MPNN-U | 0.8712 ± .0036 | 0.2826 | 0.324 | 0.347 | 3.03M |
+| SAGE | Dir-GNN | 0.8751 ± .0082 | 0.3028 | 0.327 | 0.357 | 3.76M |
+| GAT | MPNN-D | **0.8742 ± .0079** | 0.3121 | 0.342 | 0.362 | 5.22M |
+| GAT | MPNN-U | 0.8721 ± .0021 | 0.3083 | 0.333 | 0.372 | 5.22M |
+| GAT | Dir-GNN | 0.8633 ± .0050 | 0.2854 | 0.336 | 0.326 | 8.13M |
 
 ---
 
 **Table 1b - rel-trial**
 
-| backbone | mode | test AUROC | test AUPRC | val AUROC | params |
-|---|---|---|---|---|---|
-| SAGE | MPNN-D | **0.7025 ± .0056** | 0.763 | 0.6742 | 7.27M |
-| SAGE | MPNN-U | 0.6826 ± .0132 | 0.757 | 0.6894 | 7.27M |
-| SAGE | Dir-GNN | **0.6962 ± .0177** | 0.763 | 0.6850 | 8.26M |
-| GAT | MPNN-D | 0.6218 ± .0031 | 0.701 | 0.6463 | 10.25M |
-| GAT | MPNN-U | **0.6625 ± .0151** | 0.740 | 0.6641 | 10.25M |
-| GAT | Dir-GNN | **0.6512 ± .0204** | 0.737 | 0.6634 | 14.22M |
-
-*SAGE: MPNN-D and Dir-GNN tie for top (differ by .006, well inside their std); MPNN-U trails. GAT: the two bidirectional modes tie for top, and MPNN-D is clearly worst (~.04 below). Note SAGE's validation ranks MPNN-D last, opposite its test order - see the caveat in §3.6.*
+| backbone | mode | AUROC | AUPRC | precision | recall | params |
+|---|---|---|---|---|---|---|
+| SAGE | MPNN-D | 0.6715 ± .0013 | 0.7377 | 0.605 | 0.975 | 7.29M |
+| SAGE | MPNN-U | 0.6863 ± .0020 | 0.7556 | 0.626 | 0.928 | 7.29M |
+| SAGE | Dir-GNN | **0.6866 ± .0002** | 0.7569 | 0.615 | 0.948 | 8.27M |
+| GAT | MPNN-D | 0.6467 ± .0043 | 0.7059 | 0.603 | 0.969 | 10.27M |
+| GAT | MPNN-U | 0.6642 ± .0008 | 0.7332 | 0.599 | 0.980 | 10.27M |
+| GAT | Dir-GNN | **0.6644 ± .0045** | 0.7314 | 0.621 | 0.936 | 14.23M |
 
 ![Aspect 1 loss curves - SAGE](artifacts/loss_curves_A1_SAGE.png)
 *Figure 2: SAGE backbone, all three directionality modes, per-epoch train loss / validation loss / validation AUROC, mean ± std over 3 seeds, star = restored best epoch.*
@@ -240,7 +234,9 @@ This subsection reports a follow-up investigation beyond the assignment's Aspect
 
 **Question.** rel-stack's 11 relations are severely imbalanced in edge count - `votes.UserId->users` has 5,182 edges versus `votes.PostId->posts`'s 1,199,831, a 232x gap - while rel-trial's 15 relations are comparatively balanced (about 10x top-to-bottom, no severe outlier). Does homogeneous SAGE beat heterogeneous SAGE on rel-stack because some relations' independent weight matrices are estimated from too little data, and does sharing weight structure across relations fix that?
 
-**Method.** Since PyG's native basis-decomposition mechanism (the standard R-GCN fix for exactly this failure mode: each relation's weight matrix becomes a learned combination of a small shared set of `B` basis matrices, rather than a fully independent matrix) ships only on `RGCNConv`, we built a hand-written `BasisSAGEConv` that reproduces `SAGEConv`'s own formula (`out = lin_l(mean_neighbors) + lin_r(self)`, confirmed against PyG's source) with each relation's `lin_l`/`lin_r` constructed as `W = sum_b coef[rel,b] * basis[b]` instead of being independently owned. Relations targeting the same destination type are summed, matching the official `HeteroConv(..., aggr="sum")` exactly, so `num_bases = num_relations` (22 for rel-stack, 30 for rel-trial) serves as the "no sharing" reference point within this same SAGE family. Same 30-epoch/patience-6/3-seed protocol as everywhere else in this report. Swept `num_bases` over `{1, 2, 4, 8, 12, 16, 20, num_relations}`.
+**Method.** Since PyG's native basis-decomposition mechanism (the standard R-GCN fix for exactly this failure mode: each relation's weight matrix becomes a learned combination of a small shared set of `B` basis matrices, rather than a fully independent matrix) ships only on `RGCNConv`, we built a hand-written `BasisSAGEConv` that reproduces `SAGEConv`'s own formula (`out = lin_l(mean_neighbors) + lin_r(self)`, confirmed against PyG's source) with each relation's `lin_l`/`lin_r` constructed as `W = sum_b coef[rel,b] * basis[b]` instead of being independently owned.
+
+**Architecture and implementation.** `BasisSAGEConv` holds two shared basis tensors, `basis_l` and `basis_r` (each shaped `B x ch x ch`), plus two small per-relation coefficient matrices, `coef_l` and `coef_r` (each `R x B`, `R` = number of relations). No relation owns a full `ch x ch` matrix outright: on every forward pass, relation `rel`'s actual weight matrices are assembled from its own length-`B` coefficient row via `W_l^rel = sum_b coef_l[rel, b] * basis_l[b]` (one `torch.einsum` per relation, same for `W_r^rel`). The rest of the forward pass follows `SAGEConv` relation-by-relation: source node features are mean-aggregated onto destination nodes with `scatter(..., reduce="mean")`, passed through `W_l^rel` plus a per-relation bias, added to the destination's own features passed through `W_r^rel` (no bias, matching `SAGEConv`), and relations sharing a destination type are summed - exactly reproducing `HeteroConv(..., aggr="sum")` wrapping one independent `SAGEConv` per relation. `num_bases` (`B`) is the only knob this changes: with `B < num_relations`, every relation's weights are forced through the same shared basis set, so a rare relation's gradient also reshapes the bases that common relations rely on, instead of only ever touching its own private matrix. `SAGEBasisModel` otherwise keeps the identical `HeteroEncoder`, two-layer conv stack, and MLP head as the official hetero SAGE model from Section 4.2, so `num_bases` is the only architectural difference from that baseline. Relations targeting the same destination type are summed, matching the official `HeteroConv(..., aggr="sum")` exactly, so `num_bases = num_relations` (22 for rel-stack, 30 for rel-trial) serves as the "no sharing" reference point within this same SAGE family. Same 30-epoch/patience-6/3-seed protocol as everywhere else in this report. Swept `num_bases` over `{1, 2, 4, 8, 12, 16, 20, num_relations}`.
 
 **Results.**
 
